@@ -35,6 +35,71 @@ async function blob(): Promise<typeof import('@vercel/blob')> {
   return blobClient
 }
 
+/**
+ * S3-compatible object storage. Neon Object Storage speaks the S3 API and
+ * reads the AWS SDK's own environment variables, so the same code path serves
+ * it and any other S3-compatible store.
+ *
+ * The bucket's access level is a property of the bucket rather than of the
+ * request, so it is stated in the environment instead of being probed: a
+ * public bucket answers the browser itself, a private one is read with the
+ * credentials and handed on by this app.
+ */
+const s3Bucket = () => process.env.NEON_STORAGE_BUCKET || 'eventinvites-storage'
+
+const s3Access = (): 'public' | 'private' =>
+  process.env.NEON_STORAGE_ACCESS === 'public' ? 'public' : 'private'
+
+const s3Configured = () =>
+  Boolean(
+    process.env.AWS_ENDPOINT_URL_S3 &&
+      process.env.AWS_ACCESS_KEY_ID &&
+      process.env.AWS_SECRET_ACCESS_KEY
+  )
+
+/** The S3 endpoint without a trailing slash, which the URL builders need. */
+const s3Endpoint = () => (process.env.AWS_ENDPOINT_URL_S3 || '').replace(/\/+$/, '')
+
+/** Where a public bucket serves an object from. */
+const s3PublicUrl = (key: string) => `${s3Endpoint()}/${s3Bucket()}/${key}`
+
+/** The key an upload is stored under. */
+const s3Key = (filename: string) => `${BLOB_PREFIX}/${path.basename(filename)}`
+
+type S3Module = typeof import('@aws-sdk/client-s3')
+
+/** Lazily imported so a disk or Blob deployment does not load the SDK. */
+let s3Instance: InstanceType<S3Module['S3Client']> | null = null
+async function s3(): Promise<InstanceType<S3Module['S3Client']>> {
+  if (!s3Instance) {
+    const { S3Client } = await import('@aws-sdk/client-s3')
+    s3Instance = new S3Client({
+      endpoint: process.env.AWS_ENDPOINT_URL_S3,
+      region: process.env.AWS_REGION || 'us-east-1',
+      // The bucket is part of the path rather than of the hostname.
+      forcePathStyle: true,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+      },
+    })
+  }
+  return s3Instance
+}
+
+/**
+ * Which store the deployment uses. `STORAGE_BACKEND` forces one; otherwise
+ * the first configured store wins, so a deployment only has to carry the
+ * credentials of the store it actually uses.
+ */
+function storeKind(): 'disk' | 'blob' | 's3' {
+  const forced = process.env.STORAGE_BACKEND
+  if (forced === 'disk' || forced === 'blob' || forced === 's3') return forced
+  if (s3Configured()) return 's3'
+  if (useBlob()) return 'blob'
+  return 'disk'
+}
+
 /** Setting key remembering whether the store refuses public access. */
 const STORE_ACCESS_SETTING = 'blob_store_access'
 
@@ -72,13 +137,19 @@ async function rememberStoreAccess(access: 'public' | 'private'): Promise<void> 
 }
 
 export function isBlobStorage(): boolean {
-  return useBlob()
+  return storeKind() === 'blob'
+}
+
+/** Whether uploads land on a local disk, which only development does. */
+export function usesLocalDisk(): boolean {
+  return storeKind() === 'disk'
 }
 
 export function ensureUploadDir(): void {
-  if (useBlob()) return
-  if (!fs.existsSync(UPLOAD_DIR)) {
-    fs.mkdirSync(UPLOAD_DIR, { recursive: true })
+  if (usesLocalDisk()) {
+    if (!fs.existsSync(UPLOAD_DIR)) {
+      fs.mkdirSync(UPLOAD_DIR, { recursive: true })
+    }
   }
 }
 
@@ -90,7 +161,13 @@ export function ensureUploadDir(): void {
  */
 export async function checkStorage(): Promise<boolean> {
   try {
-    if (useBlob()) {
+    if (storeKind() === 's3') {
+      const { ListObjectsV2Command } = await import('@aws-sdk/client-s3')
+      const client = await s3()
+      await client.send(new ListObjectsV2Command({ Bucket: s3Bucket(), MaxKeys: 1 }))
+      return true
+    }
+    if (storeKind() === 'blob') {
       const { list } = await blob()
       await list({ limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN })
       return true
@@ -107,9 +184,10 @@ export interface SavedUpload {
   /**
    * What gets recorded in the database.
    *
-   * With object storage this is the store's own URL, so the row keeps
-   * pointing at the bytes when they move to another store. On a local disk
-   * it is a path served by the `/uploads/:filename` route below.
+   * With Vercel Blob this is the store's own URL, so the row keeps pointing
+   * at the bytes when they move to another store. Every other store records
+   * the path served by the `/uploads/:filename` route below, which names the
+   * file rather than the store and so outlives a change of store.
    */
   url: string
 }
@@ -120,7 +198,23 @@ export async function saveUpload(file: Express.Multer.File): Promise<SavedUpload
   const extension = path.extname(file.originalname) || '.png'
   const filename = `${randomUUID()}${extension}`
 
-  if (useBlob()) {
+  if (storeKind() === 's3') {
+    const { PutObjectCommand } = await import('@aws-sdk/client-s3')
+    const client = await s3()
+    await client.send(
+      new PutObjectCommand({
+        Bucket: s3Bucket(),
+        Key: s3Key(filename),
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      })
+    )
+    // The row names the file rather than the store, so the same path keeps
+    // working whichever store holds the bytes.
+    return { url: `${UPLOAD_ROUTE}/${filename}` }
+  }
+
+  if (storeKind() === 'blob') {
     const { put } = await blob()
     const token = process.env.BLOB_READ_WRITE_TOKEN
     const shared = {
@@ -230,13 +324,56 @@ async function readBlobBytes(url: string): Promise<Buffer | null> {
   return null
 }
 
+/**
+ * Finds a file in an S3-compatible store. A public bucket is answered with a
+ * redirect, leaving the transfer to the store; a private one is read with the
+ * credentials and handed on by this app.
+ */
+async function resolveS3Upload(filename: string): Promise<ResolvedUpload | null> {
+  const { GetObjectCommand, HeadObjectCommand } = await import('@aws-sdk/client-s3')
+  const client = await s3()
+  const key = s3Key(filename)
+  const contentType = contentTypeFor(filename)
+
+  if (s3Access() === 'public') {
+    try {
+      const head = await client.send(new HeadObjectCommand({ Bucket: s3Bucket(), Key: key }))
+      return {
+        redirectTo: s3PublicUrl(key),
+        contentType: head.ContentType || contentType,
+        size: head.ContentLength,
+      }
+    } catch {
+      return null
+    }
+  }
+
+  try {
+    const result = await client.send(new GetObjectCommand({ Bucket: s3Bucket(), Key: key }))
+    const bytes = await result.Body?.transformToByteArray()
+    if (!bytes) return null
+    const body = Buffer.from(bytes)
+    return { body, contentType: result.ContentType || contentType, size: body.byteLength }
+  } catch {
+    return null
+  }
+}
+
 export async function resolveUpload(filename: string): Promise<ResolvedUpload | null> {
-  if (useBlob()) return resolveBlobUpload(filename)
+  const kind = storeKind()
+  if (kind === 's3') return resolveS3Upload(filename)
+  if (kind === 'blob') return resolveBlobUpload(filename)
   return resolveDiskUpload(filename)
 }
 
 export async function deleteUpload(filename: string): Promise<void> {
-  if (useBlob()) {
+  if (storeKind() === 's3') {
+    const { DeleteObjectCommand } = await import('@aws-sdk/client-s3')
+    const client = await s3()
+    await client.send(new DeleteObjectCommand({ Bucket: s3Bucket(), Key: s3Key(filename) }))
+    return
+  }
+  if (storeKind() === 'blob') {
     const { del } = await blob()
     // The database may hold a store URL rather than a bare name, so both
     // shapes are tried.

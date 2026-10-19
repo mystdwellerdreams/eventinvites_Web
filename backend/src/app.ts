@@ -26,7 +26,7 @@ import {
   publicRouter as bannerPublicRoutes,
   adminRouter as bannerAdminRoutes,
 } from './routes/banners'
-import { UPLOAD_ROUTE, ensureUploadDir, resolveUpload, checkStorage } from './utils/storage'
+import { UPLOAD_ROUTE, ensureUploadDir, resolveUpload, checkStorage, usesLocalDisk } from './utils/storage'
 import { allowedOrigins, isCrossSiteDeployment } from './utils/cookies'
 
 /**
@@ -40,9 +40,10 @@ export const app = express()
 
 const isProduction = process.env.NODE_ENV === 'production'
 
-// Local development writes uploads to disk. On Vercel that directory is
-// ephemeral, so nothing is written there and the dir is never created.
-if (!process.env.BLOB_READ_WRITE_TOKEN) {
+// Local development writes uploads to disk. On a serverless host that
+// directory is ephemeral, so nothing is written there and the dir is never
+// created.
+if (usesLocalDisk()) {
   ensureUploadDir()
 }
 
