@@ -41,9 +41,24 @@ export const verifyRefreshToken = (token: string) => {
   return jwt.verify(token, REFRESH_SECRET) as { id: string; email: string; role: string }
 }
 
+/**
+ * The access token is read from the `Authorization: Bearer` header first — the
+ * Android app's channel, where Bearer tokens are the auth mechanism — and falls
+ * back to the `accessToken` cookie, which is how the browser authenticates.
+ * Bearer wins so the two never interfere: the app sends a header and no cookie,
+ * the browser sends a cookie and no header.
+ */
+function extractAccessToken(req: AuthRequest): string | undefined {
+  const header = req.headers.authorization
+  if (header?.startsWith('Bearer ')) {
+    return header.slice(7)
+  }
+  return req.cookies?.accessToken
+}
+
 export const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const accessToken = req.cookies?.accessToken
+    const accessToken = extractAccessToken(req)
     if (!accessToken) {
       return res.status(401).json({ error: 'Authentication required' })
     }
@@ -64,7 +79,7 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
 
 export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const accessToken = req.cookies?.accessToken
+    const accessToken = extractAccessToken(req)
     if (accessToken) {
       const decoded = verifyAccessToken(accessToken)
       const user = await prisma.user.findUnique({ where: { id: decoded.id } })

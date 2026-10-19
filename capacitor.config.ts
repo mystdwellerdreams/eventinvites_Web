@@ -3,33 +3,33 @@ import type { CapacitorConfig } from '@capacitor/cli'
 /**
  * The Android shell for the web application.
  *
- * The Next.js app is served from the same origin as its API, and its auth
- * cookies are first-party. Reproducing that as a bundled static build would
- * mean rewriting every dynamic route (`/events/<id>`, `/events/key/<key>`), so
- * the shell loads the deployed site directly in a WebView instead. Everything
- * — pages, API and cookies — then behaves exactly as it does in a browser.
+ * Two modes, selected by `CAPACITOR_DEV`:
  *
- * Point it at the deployment that should be shipped:
+ * - Dev (`CAPACITOR_DEV=1`): the shell loads a live dev server — Vite on
+ *   `http://10.0.2.2:5173` by default, or `CAPACITOR_SERVER_URL` when set — so
+ *   changes to `src/` appear without a rebuild. Cleartext is allowed because a
+ *   laptop URL is plain HTTP.
  *
- *   CAPACITOR_SERVER_URL=https://your-app.vercel.app npx cap sync android
+ * - Release (no env var): `server.url` is absent, so the shell loads the
+ *   pre-bundled Vite output from `mobile/www/`. `https://localhost` is the
+ *   origin the WebView answers on, so auth and API requests are same-origin
+ *   to the bundle and never touch the browser's cookie jar.
  *
- * With no URL set it falls back to the Android emulator's alias for the host
- * machine, which is what `npm run dev` (Next on :3000) answers on.
+ * A release build never inherits a laptop URL: the env var is the only
+ * switch that writes `server.url` at all (D15).
  */
-const serverUrl = process.env.CAPACITOR_SERVER_URL || 'http://10.0.2.2:3000'
-const isHttps = serverUrl.startsWith('https://')
+const devUrl =
+  process.env.CAPACITOR_DEV === '1'
+    ? process.env.CAPACITOR_SERVER_URL ?? 'http://10.0.2.2:5173'
+    : undefined
 
 const config: CapacitorConfig = {
   appId: 'club.kolymafia.eventinvites',
   appName: 'Event Invites',
-  // Only used if `server.url` is removed: a plain loading screen.
   webDir: 'mobile/www',
-  server: {
-    url: serverUrl,
-    // The emulator fallback is plain HTTP; production deployments are HTTPS.
-    cleartext: !isHttps,
-    androidScheme: 'https',
-  },
+  server: devUrl
+    ? { url: devUrl, cleartext: true, androidScheme: 'https' }
+    : { androidScheme: 'https' },
   android: {
     allowMixedContent: false,
   },

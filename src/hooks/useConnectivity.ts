@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { API_BASE } from '../utils/env'
 
 /** One connection layer's state. */
 export type LayerState = 'ok' | 'down'
@@ -19,7 +20,7 @@ export interface ConnectivityStatus {
 export type ConnectivityPhase = 'idle' | 'probing' | 'retrying'
 
 /** Where the health check lives. */
-const HEALTH_URL = '/api/health'
+const HEALTH_URL = `${API_BASE}/health`
 /**
  * Where the internet at large is checked, and only ever when our own origin
  * cannot be reached. The request is cross-origin with no credentials and no

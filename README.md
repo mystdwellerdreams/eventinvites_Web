@@ -310,8 +310,11 @@ src/
   utils/                  api client, asset URLs, roles, push bridge helpers
 capacitor.config.ts       Android shell: app id, name and the server it loads
 mobile/
-  www/                    offline screen, used only if no server is configured
+  app/                    Vite entry: index.html, main.tsx, App.tsx (route table)
+  www/                    Vite build output, bundled into the APK (gitignored)
+  vite.config.ts          aliases next/link → navigation.router.tsx
   scripts/                generate-assets.mjs: icons and splash from public/logo.png
+capacitor.config.ts       Android shell: appId, webDir, and dev/release mode (CAPACITOR_DEV)
 android/                  Capacitor Android project (Gradle, manifest, resources)
 docs/ANDROID.md           Firebase setup, the build steps, and how push is wired
 ```
@@ -339,30 +342,41 @@ previous owner's notifications.
 
 ## Android app
 
-The Android app is a Capacitor shell around the same Next.js app: it loads the
-deployed site in a WebView, so pages, the API and the first-party auth cookies
-behave exactly as they do in a browser. Push notifications come from Firebase
-Cloud Messaging and are delivered into the app's own notification system, never
-in place of it.
+The Android app is a Capacitor shell around the same `src/` the browser uses.
+Instead of loading the deployed site in a WebView, the shell ships a **Vite
+build** of `src/` bundled into `mobile/www/` — React Router replaces the Next.js
+router via an alias (`next/link` → `src/utils/navigation.router.tsx`), and auth
+uses `Authorization: Bearer` headers against the deployed API, not cookies (the
+WebView's `https://localhost` origin makes cookies third-party, and the Android
+WebView drops them by default). Push notifications come from Firebase Cloud
+Messaging and are delivered into the app's own notification system, never in
+place of it.
 
 ```bash
-npm run android:assets                     # icons and splash from public/logo.png
-CAPACITOR_SERVER_URL=https://your-app.vercel.app npm run android:sync
-npm run android:open                       # opens the project in Android Studio
+npm run app:build                     # bundle src/ → mobile/www/
+VITE_API_BASE=https://your-app.vercel.app/api npm run app:build
+npm run android:sync                  # cap sync, copies www into android/
+npm run android:open                  # Android Studio: select a device, press Run
+```
+
+For live reload during development:
+
+```bash
+npm run app:dev &
+CAPACITOR_DEV=1 npm run android:sync  # shell points at the Vite dev server
 ```
 
 The three pieces that make push work:
 
 | Piece | Where | What it does |
 | ----- | ----- | ------------ |
-| Device registration | `src/components/NativeBridge.tsx`, `POST /api/devices` | On sign-in the FCM token is stored against the account; on sign-out the device is removed before the session ends. |
+| Device registration | `src/components/NativeBridge.tsx`, `POST /api/devices` | On sign-in the FCM token is stored against the account with `appVersion`; on sign-out the device is removed before the session ends. |
 | Delivery | `backend/src/utils/push.ts` | Sends an FCM HTTP v1 message for every notification written. Off unless a service account is configured. |
 | Linking | `data` payload + `NotificationBell` | Each push carries the row's id and a route: tapping it marks the notification read and opens the screen, exactly like clicking the bell row. |
 
-[`docs/ANDROID.md`](docs/ANDROID.md) has the Firebase project setup, the
-render/build steps, a payload reference and troubleshooting. Push needs no
-changes to the web deployment: with `FCM_SERVICE_ACCOUNT_JSON` unset the push
-layer is a no-op.
+[`docs/ANDROID.md`](docs/ANDROID.md) has the Firebase setup, the build steps, a
+payload reference and troubleshooting. Push needs no changes to the web
+deployment: with `FCM_SERVICE_ACCOUNT_JSON` unset the push layer is a no-op.
 
 ## Deploying to Vercel
 
@@ -390,7 +404,7 @@ migrations, so preview builds need them too):
 | `TURNSTILE_SECRET_KEY`  | no       | server-side captcha check                      |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | no | inlines the captcha widget                |
 | `FCM_SERVICE_ACCOUNT_JSON` | no    | enables push to the Android app                |
-| `FRONTEND_URL`          | no       | extra origins allowed to call the API          |
+| `FRONTEND_URL`          | no       | origins allowed to call the API; include `https://localhost` for the APK |
 
 Generate secrets with `openssl rand -base64 32`.
 
@@ -403,7 +417,7 @@ Generate secrets with `openssl rand -base64 32`.
 
 ### Cookies and CORS
 
-Because the pages and the API are one origin, the auth cookies are ordinary
+Because the pages and the API are one origin, the web auth cookies are ordinary
 first-party `SameSite=Lax; HttpOnly` cookies and CORS never comes into play.
 `FRONTEND_URL` lists further origins that may call the API, comma-separated —
 the Android app's `https://localhost` WebView is one. When it is set in
@@ -413,6 +427,12 @@ every set and clear goes through the same helper, so a logout or refresh cannot
 leave a stale cookie behind. CORS echoes only the listed origins: with it unset
 no CORS headers are emitted at all, because reflecting an arbitrary origin
 alongside credentials would let any site read authenticated responses.
+
+The APK does not use cookies at all: it authenticates with `Authorization:
+Bearer` headers (see `src/utils/authToken.ts`), and `FRONTEND_URL` must include
+`https://localhost` so the CORS preflight for that header is allowed. `GET
+/api/health` reports `corsOrigins` — check that it lists the WebView origin
+before anything else.
 
 `GET /api/health` reports `corsOrigins` and `crossSiteCookies`, which is the
 quickest way to confirm the deployment is configured as intended.
@@ -454,7 +474,10 @@ or point at an empty database.
 | `npm run db:check`        | Preflight the migrations without applying them |
 | `npm run db:seed`         | Seed default accounts and sample events        |
 | `npm run db:studio`       | Open Prisma Studio                             |
-| `npm run typecheck`       | Type-check the app and the API (`tsc --noEmit`) |
+| `npm run typecheck`     | Type-check the app and the API (`tsc --noEmit`) |
+| `npm run app:dev`       | Vite dev server for the APK bundle |
+| `npm run app:build`     | Bundle `src/` into `mobile/www/` |
+| `npm run app:sync`      | `app:build` then `cap sync android` |
 | `npm run android:assets`  | Generate icons and splash from `public/logo.png` |
 | `npm run android:sync`    | Build the web config into the Android project  |
 | `npm run android:open`    | Open `android/` in Android Studio              |

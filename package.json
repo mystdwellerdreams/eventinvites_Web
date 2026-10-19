@@ -20,6 +20,9 @@
         "db:migrate": "npm run db:migrate --workspace=backend",
         "db:seed": "npm run db:seed --workspace=backend",
         "db:studio": "npm run db:studio --workspace=backend",
+        "app:dev": "vite --config mobile/vite.config.ts",
+        "app:build": "vite build --config mobile/vite.config.ts",
+        "app:sync": "npm run app:build && cap sync android",
         "android:sync": "cap sync android",
         "android:assets": "node mobile/scripts/generate-assets.mjs",
         "android:copy": "cap copy android",
@@ -43,9 +46,13 @@
         "@types/node": "^20.19.43",
         "@types/react": "^18.2.55",
         "@types/react-dom": "^18.2.19",
+        "@vitejs/plugin-react": "^5.2.0",
+        "capacitor-secure-storage-plugin": "^0.13.0",
         "prisma": "^5.22.0",
+        "react-router-dom": "^7.18.4",
         "tsx": "^4.23.15",
         "typescript": "^5.9.3",
+        "vite": "^7.3.7",
         "ws": "^8.22.0"
     },
     "engines": {

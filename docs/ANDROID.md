@@ -1,33 +1,33 @@
 # The Android app
 
 The Android app is a [Capacitor](https://capacitorjs.com) shell around the same
-Next.js application. It loads the deployed site in a WebView, so pages, the API
-and the first-party auth cookies behave exactly as they do in a browser —
-including the notification bell and the Messages section. On top of that the
-shell adds **push notifications through Firebase Cloud Messaging**, wired into
-the app's own notification system rather than beside it.
+`src/` the browser uses. The Next.js app keeps serving the web; the APK ships a
+**Vite build** of that code, bundled into `mobile/www/` and served by the
+WebView from `https://localhost`. Pages, the API and auth all travel over
+`Authorization: Bearer` headers against the deployed API — no cookies, because
+the WebView's `https://localhost` origin makes them third-party and the Android
+WebView drops third-party cookies by default. On top of that shell layer,
+**push notifications arrive through Firebase Cloud Messaging**, wired into the
+app's own notification system rather than beside it.
 
 ```
-┌─────────────────────────── Android app ───────────────────────────┐
-│  MainActivity (Capacitor WebView)                                 │
-│    https://your-app.vercel.app  ── the whole Next.js app          │
-│    + capacitor.js bridge                                          │
-│        ├── @capacitor/push-notifications   FCM token, taps        │
-│        ├── @capacitor/local-notifications  foreground + channel   │
-│        └── @capacitor/app                  back button, resume    │
-│                                                                    │
-│  src/components/NativeBridge.tsx  (loaded by the web app)         │
-│    sign-in  → POST /api/devices    { token }                      │
-│    tap push → mark read + open the same screen as the bell row    │
-│    sign-out → DELETE /api/devices                                 │
-└────────────────────────────────────────────────────────────────────┘
-                         │                    ▲
-                         ▼                    │ FCM HTTP v1
-   ┌─────────────── Vercel API ───────────────┴────────────┐
-   │  notifyUser / notifyUsers / createBroadcast           │
-   │    writes the bell row, then backend/src/utils/push.ts│
-   │    resolves who may see it and sends the push         │
-   └───────────────────────────────────────────────────────┘
+┌─────────────────────────── APK ─────────────────────────────────┐
+│  Capacitor 8 WebView          https://localhost                 │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ Vite bundle of src/ (React Router, BrowserRouter)         │  │
+│  │ src/utils/navigation.router.tsx ← alias of next/link      │  │
+│  │     and next/navigation                                   │  │
+│  │ Bearer access token in memory                            │  │
+│  │ refresh token in Keystore (EncryptedSharedPreferences)     │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│  NativeBridge: FCM token, channels, taps, badge                 │
+│  androidScheme: https → API is same-origin to the bundle         │
+└─────────────────────────┬──────────────────────────────────────┘
+                          │ HTTPS, Authorization: Bearer
+                          │ CORS allow-list includes https://localhost
+┌─────────────────────────▼──────────────────────────────────────┐
+│ Vercel: Next catch-all → Express → Prisma/Neon/Blob            │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 The push layer is inert until a service account is configured. Without
@@ -38,15 +38,21 @@ existed.
 
 | Path | Role |
 | ---- | ---- |
-| `capacitor.config.ts` | App id, name, and the site the shell loads (`server.url`). |
-| `android/` | The generated Capacitor project: Gradle, manifest, resources, app icons. |
-| `mobile/www/` | A plain offline screen, used only if no server URL is configured. |
-| `mobile/scripts/generate-assets.mjs` | Rebuilds the launcher icons and splash screens from `public/logo.png`. |
+| `capacitor.config.ts` | App id, name, and `webDir: mobile/www`. `server.url` is set only when `CAPACITOR_DEV=1`; a release build loads the bundle with no server URL at all. |
+| `mobile/vite.config.ts` | The app build: aliases `next/link` and `next/navigation` to `src/utils/navigation.router.tsx`, bundles `src/` into `mobile/www/`. |
+| `mobile/app/` | Vite entry: `index.html`, `main.tsx` and `App.tsx` (the route table). `mobile/www/` is generated and gitignored. |
+| `src/utils/navigation.router.tsx` | The React Router facade that stands in for `next/link` and `next/navigation` in the app build. No source file imports it directly. |
+| `src/utils/authToken.ts` | In-memory access token and Keystore-backed refresh token. No-op on the web. |
+| `src/utils/env.ts` | Reads `NEXT_PUBLIC_*` (Next) or `VITE_*` (Vite) so one import works in both builds. |
 | `src/components/NativeBridge.tsx` | Registers the device, turns pushes into local notifications, routes taps. |
-| `src/utils/nativePush.ts` | Small helpers: stored token, sign-out removal, bell refresh event. |
-| `backend/src/routes/devices.ts` | `POST /api/devices` and `DELETE /api/devices`. |
+| `src/utils/nativePush.ts` | Small helpers: stored token, app-version read, sign-out removal, bell refresh event. |
+| `backend/src/middleware/auth.ts` | Accepts `Authorization: Bearer` first, then the `accessToken` cookie. |
+| `backend/src/routes/auth.ts` | Issues a `refreshToken` in the JSON body when `client === 'app'`; accepts it on refresh and logout. |
+| `backend/src/routes/devices.ts` | `POST /devices`, `DELETE /devices`, `POST /devices/test`. |
 | `backend/src/utils/push.ts` | FCM HTTP v1 delivery, access-token caching, stale-token cleanup. |
 | `backend/src/utils/notifications.ts` | Sends the push right after each notification row is written. |
+| `android/` | The generated Capacitor project: Gradle, manifest, resources, app icons. |
+| `mobile/scripts/generate-assets.mjs` | Rebuilds the launcher icons and splash screens from `public/logo.png`. |
 | `android/app/src/main/res/xml/network_security_config.xml` | HTTPS everywhere, cleartext only for the emulator host. |
 
 ## Prerequisites
@@ -94,35 +100,46 @@ base64 -w0 service-account.json          # macOS/Linux
 `FCM_PROJECT_ID` may be set on its own to override the project named inside the
 key.
 
-## 2. Point the shell at the deployment
+## 2. Build the bundle
 
-`capacitor.config.ts` reads `CAPACITOR_SERVER_URL` when the native project is
-synced. With it unset the shell loads `http://10.0.2.2:3000`, the Android
-emulator's alias for the host machine, which is what `npm run dev` answers on:
+The APK contains no server URL to fall back on — it loads its own code from
+`mobile/www/`. Build that bundle before every `cap sync`:
 
 ```bash
-npm run dev                                            # Next.js on :3000
-
-# production
-CAPACITOR_SERVER_URL=https://your-app.vercel.app npm run android:sync
-
-# or, against your local server from the emulator
-npm run android:sync
+npm run app:build          # vite build → mobile/www/
 ```
 
-Only HTTPS is permitted outside the emulator: `network_security_config.xml`
-allows cleartext for `10.0.2.2`, `localhost` and `127.0.0.1` and nothing else.
+The build needs `VITE_API_BASE` — the absolute API URL the app talks to, e.g.
 
-> On Windows the environment variable is set differently:
-> `$env:CAPACITOR_SERVER_URL="https://your-app.vercel.app"; npm run android:sync`.
+```bash
+VITE_API_BASE=https://your-app.vercel.app/api npm run app:build
+```
+
+Without it Vite inlines an empty string and `env.ts` falls back to `/api`, which
+in the APK resolves to `https://localhost/api` — nothing is listening there
+once a release build has no `server.url`, so sign-in would fail. CI enforces this
+(see Phase 4).
+
+For **live reload** during development, run Vite and let the shell load it:
+
+```bash
+npm run app:dev            # Vite dev server on :5173
+
+# from the Android project dir:
+CAPACITOR_DEV=1 npm run android:sync     # server.url → http://10.0.2.2:5173
+```
+
+`CAPACITOR_DEV=1` is the only switch that writes `server.url` (D15); a release
+sync omits it and the shell loads the bundle.
 
 ## 3. Build and run
 
 ```bash
 npm install
-npm run android:assets          # optional: refresh icons/splash from public/logo.png
-npm run android:sync            # copy config and plugins into android/
-npm run android:open            # Android Studio: select a device, press Run
+npm run app:assets          # optional: refresh icons/splash from public/logo.png
+npm run app:build           # bundle src/ → mobile/www/
+npm run android:sync        # copy config and plugins into android/
+npm run android:open        # Android Studio: select a device, press Run
 ```
 
 From the command line, with a device or emulator attached:
@@ -145,8 +162,8 @@ in, so manifest, resources and icon changes belong in source control.
    same phone as another account re-points it).
 3. **Write.** An action calls `notifyUser`, `notifyUsers` or `createBroadcast`.
    The row is written first, then `push.ts` decides who may see it — publish
-   state, time window, visibility tags, and the participant list for an organizer
-   update — and sends one FCM HTTP v1 message per device.
+   state, time window, visibility tags, and the participant list for an
+   organizer update — and sends one FCM HTTP v1 message per device.
 4. **Delivery.**
    - App in the background: Android shows the notification on the
      `event_invites` channel the app created at launch.
@@ -155,9 +172,9 @@ in, so manifest, resources and icon changes belong in source control.
 5. **Tap.** `pushNotificationActionPerformed` marks the row read
    (`POST /api/notifications/…`), tells the bell to reload, and pushes the route
    carried in the payload — the same screen the bell row would open.
-6. **Sign-out.** `AuthContext.logout` calls `DELETE /api/devices` while the
-   session still answers, then unregisters locally, so the next account on the
-   phone does not inherit the previous one's notifications.
+6. **Sign-out.** `authAPI.logout` sends the refresh token from the Keystore,
+   revokes it server-side, then clears the in-memory access token and the
+   persisted refresh token. The device is removed before the session ends.
 7. **Cleanup.** When FCM answers `UNREGISTERED` for a token (app uninstalled,
    data cleared, token rotated) the row is deleted automatically.
 
@@ -183,7 +200,7 @@ Routes mirror the bell exactly:
 | Reply to a comment | `/events/<eventId>#comment-<commentId>` |
 | Administrator or chat message | `/messages?chat=<chatId>` |
 | Password reset / advice | `/profile` |
-| Anything else with an event target | `/events/<targetId>` |
+| Anything else with an event target | `/events/targetId>` |
 
 ## 6. Environment variables
 
@@ -194,12 +211,15 @@ Routes mirror the bell exactly:
 | `GOOGLE_APPLICATION_CREDENTIALS` | API (file path) | Path to the key file. Handy locally, not on Vercel. |
 | `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY` | API | The three fields separately, when a single JSON is awkward. |
 | `FCM_PROJECT_ID` | API | Overrides the project inside the key. |
-| `CAPACITOR_SERVER_URL` | Build time | The site the shell loads; read by `cap sync`, not by Vercel. |
+| `VITE_API_BASE` | Build time | The absolute API URL the app bundle talks to, e.g. `https://your-app.vercel.app/api`. Required for `app:build`. |
+| `CAPACITOR_DEV` | Build time | Set to `1` to make the shell load a dev server instead of the bundle. |
+| `CAPACITOR_SERVER_URL` | Dev only | Overrides the dev server URL (default `http://10.0.2.2:5173`). Ignored unless `CAPACITOR_DEV=1`. |
 
 ## 7. Testing
 
 - **The device is registered:** after signing in, check
-  `SELECT * FROM "DeviceToken";` — there should be one row for the account.
+  `SELECT * FROM "DeviceToken";` — there should be one row for the account, with
+  `appVersion` populated from the installed build.
 - **FCM console:** Firebase → **Messaging** → **Send test message**, paste the
   token from the table. The app receives it through the same code path as a real
   notification.
@@ -212,64 +232,81 @@ Routes mirror the bell exactly:
 
 ## 8. Release build
 
-1. Bump `versionCode` / `versionName` in `android/app/build.gradle`.
-2. Add a signing config (Android Studio → **Build → Generate Signed App Bundle /
-   APK**, or a `signingConfigs` block fed from environment variables).
-3. Build:
+Debug APKs are published from CI on every push to `main` and on every `v*` tag.
 
-   ```bash
-   npx cap build android                     # AAB for the Play Store
-   npx cap build android --androidreleasetype APK
-   ```
+| Variable | Where | Notes |
+| -------- | ----- | ----- |
+| `FCM_GOOGLE_SERVICES_JSON` | Actions secret | Written to `android/app/google-services.json`. Never committed. |
+| `ANDROID_KEYSTORE_BASE64` | Actions secret | Debug first, then release. |
+| `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` | Actions secrets | Signing inputs. |
+| `VITE_API_BASE` | Actions variable | Absolute API base for the Vite build. |
 
-4. Upload the `.aab` to the Play Console. The package name
-   `club.kolymafia.eventinvites` is the app's permanent identity.
+The CI workflow (`/android.yml`) runs `npm ci`, `npm run app:build` (which fails
+fast on a missing `VITE_API_BASE`), writes `google-services.json` from the
+secret, restores the shared debug keystore, and builds with `./gradlew
+assembleDebug`. On a `v*` tag the same pipeline runs `assembleRelease`, signed
+with the upload keystore, and attaches the APK to a GitHub Release with
+generated notes.
 
-Remember to sync the production URL **before** building:
+`versionCode` comes from `github.run_number` (written into `build.gradle` so it
+never goes backwards) and `versionName` from the tag.
 
-```bash
-CAPACITOR_SERVER_URL=https://your-app.vercel.app npm run android:sync
-```
+Switching from the debug to the release signing key forces one uninstall —
+document it in the release notes.
 
-## 9. Troubleshooting
+## 9. Update check
+
+The app checks for a newer release on every resume:
+
+1. `GET https://api.github.com/repos/<owner>/<repo>/releases/latest`
+2. Compare `tag_name` with `App.getInfo().version`
+3. If newer, show a dismissible banner with a download action
+4. Cache ~1 h; remember the dismissed version in `localStorage`
+5. The download opens in a **Chrome Custom Tab** via `@capacitor/browser@8`, which
+   returns to the app — the documented exception to "no App Links": an APK
+   cannot be installed from inside the WebView.
+
+No App Links intent filters are registered. Every non-app-origin URL — `wa.me`,
+`t.me`, the release page — leaves the WebView via `Intent.ACTION_VIEW`.
+
+## 10. Troubleshooting
 
 | Symptom | Likely cause |
 | ------- | ------------ |
-| App shows the "no server is configured" screen | `cap sync` ran without `CAPACITOR_SERVER_URL`. Re-run it with the URL set. |
-| `google-services.json not found, google-services plugin not applied` | The file is missing from `android/app/`. Push will not work until it is added. |
+| App shows a blank page | `cap sync` ran without `npm run app:build`; `mobile/www/` is empty. Re-run both. |
+| Sign-in fails with 401 | `VITE_API_BASE` is unset. The app falls back to `/api`, which has no listener. |
+| `GET /api/health` lists no `https://localhost` | `FRONTEND_URL` on the API omits the WebView origin. Add `https://localhost`. |
 | No permission prompt, no token | Android 13+ permission was denied earlier. Re-enable it in the app's system settings and sign in again. |
 | Token registers but no push arrives | `FCM_SERVICE_ACCOUNT_JSON` is unset or malformed on the API, or the API was not redeployed after adding it. |
-| Push arrives but the tap opens the wrong screen | The row's `meta` is missing the id the route needs (for example `meta.chatId`); the bell would be unable to open it either. |
+| Push arrives but the tap opens the wrong screen | The row's `meta` is missing the id the route needs. |
 | Logged-out phone still gets the old account's pushes | The device was removed offline. Signing in as the new account re-points the token; the stale row is also dropped when FCM reports it unregistered. |
-| Cleartext error against a local server | Use `10.0.2.2` from the emulator, or HTTPS from a device; only those hosts permit cleartext. |
+| Cleartext error against a local server | Use `CAPACITOR_DEV=1` and `http://10.0.2.2:5173`; a release build only loads `https://localhost`. |
 | Build fails asking for Java 21 | Install JDK 21 and point Android Studio at it. |
+| In-place upgrade fails | The signing key changed. Back up the debug keystore outside the repo. |
 
-## 10. Notes and limits
+## 11. Notes and limits
 
-- The shell **needs a network connection**: it renders the live site, not a
-  bundled copy. Reproducing the app offline would mean making every dynamic
-  route static (`/events/<id>`, `/events/key/<key>`), which is a rewrite of the
-  frontend, not a packaging change.
-- Push text generated by the API is English (the type labels such as
-  *"New event"*); the notification's own content — an event title, an
+- The shell **does not need a network connection to start**: the Vite bundle
+  renders the shell immediately. A network is needed only to reach the API for
+  sign-in, events, notifications and so on.
+- Push text generated by the API is English (the type labels such as *"New
+  event"*); the notification's own content — an event title, an
   administrator's message — is carried through as written.
 - A broadcast fans out to at most 2000 devices in one call
   (`MAX_PUSH_RECIPIENTS`). Everyone beyond that still sees the row in the bell,
   which is where eligibility is finally resolved.
-- The web and backend sides are platform-neutral, so an iOS build is
-  `npm i @capacitor/ios && npx cap add ios` plus an APNs key; only the FCM
-  project setup differs.
+- The APK is Android-only. There is no iOS project.
 
-## 11. What is never committed
+## 12. What is never committed
 
 This repository is public. Five things never enter it, and each has exactly one
 home elsewhere. **Environment files** — `.env.local`, `backend/.env` and any
-other `.env*` — are ignored by the root `.gitignore`; the real values live in
-the Vercel project settings, and only the two `.env.example` templates are
-tracked, with empty or placeholder values. **Service-account keys** —
-`firebase-adminsdk-key.json` at the root and `android/app/google-services.json`
-— are ignored and live in the Firebase console and, for CI,
-as the Actions secret `FCM_GOOGLE_SERVICES_JSON`. The FCM key the API uses
+other `.env*` — are ignored by the root `.gitignore`; the real values live in the
+Vercel project settings and Actions variables, and only the two `.env.example`
+templates are tracked, with empty or placeholder values. **Service-account keys**
+— `firebase-adminsdk-key.json` at the root and `android/app/google-services.json`
+— are ignored and live in the Firebase console and, for CI, as the Actions secret
+`FCM_GOOGLE_SERVICES_JSON`. The FCM key the API uses
 (`FCM_SERVICE_ACCOUNT_JSON`) is set only on the API's environment and is never
 shipped inside the APK. **Signing material** — `*.jks`, `*.keystore`, `*.p12`
 and `keystore.properties` — is ignored and backed up outside the repository; CI
@@ -283,7 +320,7 @@ above were excluded, and the staged tree was grepped for connection strings,
 private keys, `AIza` API keys and `service_account` blobs: zero hits outside
 the documentation and templates.
 
-## 12. Device checklist
+## 13. Device checklist
 
 Run this on a physical phone after installing a build. It takes five minutes
 and proves the whole chain without reading any source.

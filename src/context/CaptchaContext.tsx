@@ -12,6 +12,7 @@ import {
 import type { ReactNode } from 'react'
 import { onConnectionTrouble } from '../hooks/useConnectivity'
 import { useI18n } from '../i18n'
+import { API_BASE, env } from '../utils/env'
 import '../components/Captcha.css'
 
 /** The actions a challenge can be presented for. */
@@ -147,7 +148,7 @@ function FallbackWidget({
 
   useEffect(() => {
     let alive = true
-    void fetch('/api/captcha/fallback', { method: 'POST' })
+    void fetch(`${API_BASE}/captcha/fallback`, { method: 'POST' })
       .then((r) => r.json())
       .then((body: { id: string; question: string }) => {
         if (alive) setChallenge(body)
@@ -169,7 +170,7 @@ function FallbackWidget({
     setBusy(true)
     setError('')
     try {
-      const response = await fetch('/api/captcha/fallback/verify', {
+      const response = await fetch(`${API_BASE}/captcha/fallback/verify`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ id: challenge.id, answer, action }),
@@ -179,7 +180,7 @@ function FallbackWidget({
         setError(body.error ?? t('captcha.wrongAnswer'))
         // A fresh question, so the same one is not retried forever.
         setAnswer('')
-        const next = await fetch('/api/captcha/fallback', { method: 'POST' }).then((r) => r.json())
+        const next = await fetch(`${API_BASE}/captcha/fallback`, { method: 'POST' }).then((r) => r.json())
         setChallenge(next as { id: string; question: string })
         return
       }
@@ -243,7 +244,7 @@ function FallbackWidget({
  * discover it itself.
  */
 export function CaptchaProvider({ children }: { children: ReactNode }) {
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ''
+  const siteKey = env('TURNSTILE_SITE_KEY')
   const [scriptState, setScriptState] = useState<'idle' | 'loading' | 'ready' | 'failed'>('idle')
   const [tokens, setTokens] = useState<Partial<Record<CaptchaAction, string>>>({})
   const [challenge, setChallenge] = useState<CaptchaChallenge | null>(null)
@@ -411,7 +412,7 @@ function TurnstileSlot({
   action: CaptchaAction
   onToken: (action: CaptchaAction, token: string) => void
 }) {
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ''
+  const siteKey = env('TURNSTILE_SITE_KEY')
   const dark =
     typeof document !== 'undefined' &&
     document.documentElement.getAttribute('data-theme') === 'dark'

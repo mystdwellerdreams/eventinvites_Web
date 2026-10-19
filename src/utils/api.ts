@@ -1,5 +1,7 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
 import { noteTrafficFailure } from '../hooks/useConnectivity'
+import { API_BASE } from './env'
+import { getAccessToken, storeSession, clearSession, loadRefreshToken, isNativeApp } from './authToken'
 import type {
   ActivityLogResponse,
   ActivitySettings,
@@ -23,16 +25,6 @@ import type {
   OpenChatPayload,
   PasswordReset,
 } from '../types'
-
-/**
- * Same-origin by default: Next serves both the pages and the API route handler,
- * so `/api/*` is this host and auth cookies stay first-party. CORS never comes
- * into play.
- *
- * Set NEXT_PUBLIC_API_BASE only if the API ever moves to another origin. Note
- * the Next prefix: `import.meta.env` is undefined under Next and would throw.
- */
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? '/api'
 
 /** Where uploaded files are served from, whatever holds them. */
 export const UPLOAD_ROUTE = '/uploads'
@@ -84,6 +76,17 @@ const api = axios.create({
 
 type RetriableConfig = InternalAxiosRequestConfig & { _retry?: boolean }
 
+/** Attaches the in-memory Bearer token on every request when one is present.
+ *  On the web `getAccessToken` is always null, so this is a no-op and cookies
+ *  remain the only mechanism. */
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = getAccessToken()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
 let refreshInFlight: Promise<void> | null = null
 
 /** The header a verified challenge travels in. A header rather than a body
@@ -97,17 +100,33 @@ function captchaHeaders(token?: string | null): Record<string, string> {
 
 /**
  * Returning users stay signed in: when an access token has expired we trade the
- * long-lived refresh cookie for a new access token and replay the request.
+ * long-lived refresh token for a new one.
+ *
+ * In the APK the refresh token lives in the Keystore, so it is sent in the
+ * request body and the rotated pair is stored back. In the browser the token is
+ * an HttpOnly cookie that the server reads and rotates with no body at all —
+ * `loadRefreshToken` returns null, and the cookie does the rest.
+ *
  * Concurrent 401s share a single refresh round-trip.
  */
-function refreshSession(): Promise<void> {
+async function refreshSession(): Promise<void> {
   if (!refreshInFlight) {
-    refreshInFlight = api
-      .post('/auth/refresh')
-      .then(() => undefined)
-      .finally(() => {
-        refreshInFlight = null
-      })
+    refreshInFlight = (async () => {
+      const refreshToken = await loadRefreshToken()
+      if (!refreshToken) {
+        // Web path: the HttpOnly refresh cookie is sent automatically.
+        await api.post('/auth/refresh')
+        return
+      }
+      // App path: send the refresh token in the body and persist the rotation.
+      const response = await api.post('/auth/refresh', { refreshToken })
+      const { accessToken: newAccess, refreshToken: newRefresh } = response.data
+      if (newAccess && newRefresh) {
+        await storeSession(newAccess, newRefresh)
+      }
+    })().finally(() => {
+      refreshInFlight = null
+    })
   }
   return refreshInFlight
 }
@@ -118,6 +137,7 @@ api.interceptors.response.use(
     const config = error.config as RetriableConfig | undefined
     const status = error.response?.status
     const isRefreshCall = config?.url?.includes('/auth/refresh')
+    const isLogoutCall = config?.url?.includes('/auth/logout')
 
     // A failed request is the earliest signal of a broken connection, so
     // the controller hears about it here rather than only at its next
@@ -127,7 +147,7 @@ api.interceptors.response.use(
       noteTrafficFailure()
     }
 
-    if (status === 401 && config && !config._retry && !isRefreshCall) {
+    if (status === 401 && config && !config._retry && !isRefreshCall && !isLogoutCall) {
       config._retry = true
       try {
         await refreshSession()
@@ -154,14 +174,43 @@ export interface ProfileUpdate {
 }
 
 export const authAPI = {
-  register: (
+  register: async (
     data: { name: string; phone: string; email?: string; password?: string },
     captchaToken?: string | null
-  ) => api.post('/auth/register', data, { headers: captchaHeaders(captchaToken) }),
-  login: (identifier: string, password: string, captchaToken?: string | null) =>
-    api.post('/auth/login', { identifier, password }, { headers: captchaHeaders(captchaToken) }),
+  ) => {
+    const isApp = await isNativeApp()
+    const response = await api.post('/auth/register', {
+      ...data,
+      ...(isApp ? { client: 'app' } : {}),
+    }, { headers: captchaHeaders(captchaToken) })
+    const { accessToken, refreshToken } = response.data
+    if (accessToken && refreshToken) {
+      await storeSession(accessToken, refreshToken)
+    }
+    return response
+  },
+  login: async (identifier: string, password: string, captchaToken?: string | null) => {
+    const isApp = await isNativeApp()
+    const response = await api.post('/auth/login', {
+      identifier,
+      password,
+      ...(isApp ? { client: 'app' } : {}),
+    }, { headers: captchaHeaders(captchaToken) })
+    const { accessToken, refreshToken } = response.data
+    if (accessToken && refreshToken) {
+      await storeSession(accessToken, refreshToken)
+    }
+    return response
+  },
   checkInvite: (token: string) => api.get(`/auth/invite/${token}`),
-  logout: () => api.post('/auth/logout'),
+  logout: async () => {
+    const refreshToken = await loadRefreshToken()
+    try {
+      return await api.post('/auth/logout', refreshToken ? { refreshToken } : {})
+    } finally {
+      await clearSession()
+    }
+  },
   me: () => api.get('/auth/me'),
   roles: () => api.get('/auth/roles'),
   updateProfile: (data: ProfileUpdate) => api.patch('/auth/profile', data),

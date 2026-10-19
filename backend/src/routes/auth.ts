@@ -58,7 +58,7 @@ async function issueSession(user: AuthUser, res: import('express').Response) {
     },
   })
   setAuthCookies(res, accessToken, refreshToken)
-  return accessToken
+  return { accessToken, refreshToken }
 }
 
 async function assertIdentifierFree(
@@ -140,10 +140,12 @@ router.post(
       })
     }
 
-    const accessToken = await issueSession(user, res)
+    const { accessToken, refreshToken } = await issueSession(user, res)
+    const isAppClient = req.body?.client === 'app'
     res.status(201).json({
       user: withParsedUserJson(user),
       accessToken,
+      ...(isAppClient ? { refreshToken } : {}),
       role,
       message:
         role === GUEST_ROLE
@@ -206,8 +208,13 @@ router.post(
     }
 
     const { passwordHash: _passwordHash, phoneKey: _phoneKey, ...user } = matched
-    const accessToken = await issueSession(user, res)
-    res.json({ user: withParsedUserJson(user), accessToken })
+    const { accessToken, refreshToken } = await issueSession(user, res)
+    const isAppClient = req.body?.client === 'app'
+    res.json({
+      user: withParsedUserJson(user),
+      accessToken,
+      ...(isAppClient ? { refreshToken } : {}),
+    })
   })
 )
 
@@ -297,7 +304,11 @@ router.post(
 router.post(
   '/refresh',
   asyncHandler(async (req, res) => {
-    const refreshToken = req.cookies?.refreshToken
+    // The app sends its refresh token in the body; the browser sends a cookie.
+    const bodyToken = typeof req.body?.refreshToken === 'string' ? req.body.refreshToken : undefined
+    const cookieToken = req.cookies?.refreshToken
+    const refreshToken = bodyToken ?? cookieToken
+    const fromBody = !!bodyToken
     if (!refreshToken) {
       throw new AppError(401, 'Refresh token required')
     }
@@ -324,16 +335,20 @@ router.post(
     }
 
     await prisma.refreshToken.delete({ where: { token: refreshToken } })
-    const accessToken = await issueSession(user, res)
+    const { accessToken, refreshToken: newRefreshToken } = await issueSession(user, res)
 
-    res.json({ accessToken })
+    res.json({
+      accessToken,
+      ...(fromBody ? { refreshToken: newRefreshToken } : {}),
+    })
   })
 )
 
 router.post(
   '/logout',
   asyncHandler(async (req, res) => {
-    const refreshToken = req.cookies?.refreshToken
+    // The app sends its refresh token in the body; the browser sends a cookie.
+    const refreshToken = req.body?.refreshToken ?? req.cookies?.refreshToken
     if (refreshToken) {
       await prisma.refreshToken.deleteMany({ where: { token: refreshToken } })
     }
