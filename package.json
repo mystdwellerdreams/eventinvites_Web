@@ -20,7 +20,7 @@
         "db:migrate": "npm run db:migrate --workspace=backend",
         "db:seed": "npm run db:seed --workspace=backend",
         "db:studio": "npm run db:studio --workspace=backend",
-        "app:dev": "vite --config mobile/vite.config.ts",
+        "app:dev": "vite --config mobile/vite.config.ts --host",
         "app:build": "vite build --config mobile/vite.config.ts",
         "app:sync": "npm run app:build && cap sync android",
         "android:sync": "cap sync android",
