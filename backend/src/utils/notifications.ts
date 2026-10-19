@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto'
-import type { Prisma } from '@prisma/client'
+﻿import { randomUUID } from 'node:crypto'
+import type { Prisma } from '../generated/prisma/client'
 import { prisma } from './prisma'
 import { isEventVisibleTo } from './visibility'
 import { isPubliclyVisibleNow } from './eventPolicy'

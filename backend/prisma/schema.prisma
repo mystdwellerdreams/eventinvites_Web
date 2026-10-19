@@ -1,12 +1,33 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  // The engine-less client: the query compiler is plain TypeScript and
+  // WebAssembly, so no native query engine has to be loaded.
+  engineType = "client"
+  moduleFormat = "esm"
+  // The nodejs runtime, for Node: local development and the Vercel
+  // deployment. It carries the query compiler as bytes and compiles it at
+  // startup, which is fast but is not allowed on the Workers runtime.
+  runtime = "nodejs"
+}
+
+generator clientWorkers {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma-workers"
+  // The same client for the Workers runtime. The query compiler is a module
+  // beside the code rather than bytes in it, because the runtime only allows
+  // WebAssembly it was given, not WebAssembly compiled while a request runs.
+  engineType = "client"
+  moduleFormat = "esm"
+  runtime = "workerd"
 }
 
 /// PostgreSQL so the database survives redeploys. SQLite was used during local
 /// development, where a file is convenient; serverless filesystems are ephemeral.
+/// The connection URL moved to prisma.config.ts, which the CLI and the
+/// migration script both read.
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Tag {

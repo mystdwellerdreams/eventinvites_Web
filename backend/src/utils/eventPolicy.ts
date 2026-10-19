@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client'
+﻿import type { Prisma } from '../generated/prisma/client'
 
 export const AFTER_START_POLICIES = [
   'UNPUBLISH_AT_START',

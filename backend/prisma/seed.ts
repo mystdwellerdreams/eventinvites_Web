@@ -1,7 +1,14 @@
-import { PrismaClient } from '@prisma/client'
+﻿import dotenv from 'dotenv'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { PrismaClient } from '../src/generated/prisma/client'
 import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient()
+// The seed runs outside the CLI, so it loads the same env files the app does.
+dotenv.config({ path: ['../.env.local', '.env.local'], quiet: true })
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL as string }),
+})
 
 /** The page header always renders the title, date and time, so the layout only
  *  describes the elements that can be rearranged on the page body. */

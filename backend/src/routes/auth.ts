@@ -443,7 +443,7 @@ router.patch(
   '/avatar',
   authMiddleware,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { avatar } = req.body
+    const { avatar } = (req.body ?? {}) as { avatar?: unknown }
     if (typeof avatar !== 'string') {
       throw new AppError(400, 'Avatar URL required')
     }

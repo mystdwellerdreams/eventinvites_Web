@@ -28,7 +28,14 @@
         "android:copy": "cap copy android",
         "android:open": "cap open android",
         "android:run": "cap run android",
-        "android:build": "cap build android"
+        "android:build": "cap build android",
+        "web:build": "vite build --config web/vite.config.ts",
+        "worker:dev": "node scripts/worker-dev.mjs",
+        "worker:deploy": "wrangler deploy",
+        "worker:typecheck": "tsc --noEmit -p worker/tsconfig.json",
+        "worker:check": "node scripts/check-worker.mjs",
+        "cf:dev-vars": "node scripts/write-dev-vars.mjs",
+        "deploy:cloudflare": "npm run web:build && npm run worker:deploy"
     },
     "dependencies": {
         "@capacitor/android": "^8.5.3",
@@ -43,16 +50,18 @@
     },
     "devDependencies": {
         "@capacitor/cli": "^8.5.3",
+        "@cloudflare/workers-types": "^5.20261019.1",
         "@types/node": "^20.19.43",
         "@types/react": "^18.2.55",
         "@types/react-dom": "^18.2.19",
         "@vitejs/plugin-react": "^5.2.0",
         "capacitor-secure-storage-plugin": "^0.13.0",
-        "prisma": "^5.22.0",
+        "prisma": "^7.10.1",
         "react-router-dom": "^7.18.4",
         "tsx": "^4.23.15",
         "typescript": "^5.9.3",
         "vite": "^7.3.7",
+        "wrangler": "^4.151.2",
         "ws": "^8.22.0"
     },
     "engines": {

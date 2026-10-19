@@ -32,16 +32,18 @@
       ]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "app/**/*",
-    "src/**/*",
-    "mobile/app/**/*",
-    "mobile/vite.config.ts",
-    "backend/src/**/*",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
-  ],
+    "include": [
+        "next-env.d.ts",
+        "app/**/*",
+        "src/**/*",
+        "mobile/app/**/*",
+        "mobile/vite.config.ts",
+        "web/vite.config.ts",
+        "vite.shared.ts",
+        "backend/src/**/*",
+        ".next/types/**/*.ts",
+        ".next/dev/types/**/*.ts"
+    ],
   "exclude": [
     "node_modules",
     "frontend",

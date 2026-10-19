@@ -35,6 +35,18 @@ android/app/src/main/assets/capacitor.plugins.json
 # Generated web bundle for the APK
 mobile/www/
 
+# Web bundle for the Cloudflare Worker
+web/dist/
+
+# Prisma's generated client, written by `prisma generate`
+backend/src/generated/
+
+# Wrangler's local state and the secrets it reads for a local run
+.wrangler/
+.dev.vars
+.dev.vars.*
+worker-configuration.d.ts
+
 # User uploads. Never publish real user images.
 backend/uploads/
 

@@ -26,7 +26,7 @@ router.post(
 router.post(
   '/fallback/verify',
   asyncHandler(async (req, res) => {
-    const { id, answer, action } = req.body as {
+    const { id, answer, action } = (req.body ?? {}) as {
       id?: string
       answer?: string
       action?: string

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import { randomUUID } from 'crypto'
 import { prisma } from '../utils/prisma'
 import { DEFAULT_ROLE, atLeast, getRole } from '../utils/roles'
+import { ApiRequest } from '../types'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production'
 const REFRESH_SECRET = process.env.REFRESH_SECRET || 'your-super-secret-refresh-key-change-in-production'
@@ -13,7 +14,7 @@ export interface AuthUser {
   role: string
 }
 
-export interface AuthRequest extends Request {
+export interface AuthRequest extends ApiRequest {
   user?: AuthUser
 }
 

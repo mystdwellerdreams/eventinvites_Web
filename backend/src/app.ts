@@ -26,7 +26,7 @@ import {
   publicRouter as bannerPublicRoutes,
   adminRouter as bannerAdminRoutes,
 } from './routes/banners'
-import { UPLOAD_ROUTE, ensureUploadDir, resolveUpload, checkStorage, usesLocalDisk } from './utils/storage'
+import { UPLOAD_ROUTE, ensureUploadDir, resolveUpload, checkStorage, usesLocalDisk, storeName } from './utils/storage'
 import { allowedOrigins, isCrossSiteDeployment } from './utils/cookies'
 
 /**
@@ -39,6 +39,18 @@ import { allowedOrigins, isCrossSiteDeployment } from './utils/cookies'
 export const app = express()
 
 const isProduction = process.env.NODE_ENV === 'production'
+
+/**
+ * Where the API is running, for the health check's report.
+ *
+ * `APP_RUNTIME` is its own variable rather than a reading of NODE_ENV,
+ * because the build replaces NODE_ENV with a literal, so a var set on the
+ * Worker would never be seen.
+ */
+function runtimeName(): string {
+  if (process.env.APP_RUNTIME === 'workers') return 'cloudflare'
+  return isProduction ? 'serverless' : 'node'
+}
 
 // Local development writes uploads to disk. On a serverless host that
 // directory is ephemeral, so nothing is written there and the dir is never
@@ -133,8 +145,14 @@ app.use('/api/devices', deviceRoutes)
  * A check that blocks for longer than this would be slow to answer on the
  * very connections it exists to report on, so a hung dependency reads as
  * "down" rather than stalling the probe.
+ *
+ * It is deliberately as long as the connection timeout the migration script
+ * uses. A database that has scaled to zero has to wake up, and the handshake
+ * that follows can outlast a shorter budget, which would report a healthy
+ * database as down. The verdict is cached, so the wait is paid once and not
+ * on every poll.
  */
-const PROBE_TIMEOUT_MS = 4000
+const PROBE_TIMEOUT_MS = 15000
 
 /**
  * How long a fresh verdict is served from memory. The controller polls
@@ -167,11 +185,37 @@ function withDeadline<T>(probe: Promise<T>): Promise<T | null> {
 
 /** One pass over the layers, shared by everyone asking within the TTL. */
 async function probeLayers(): Promise<{ database: 'ok' | 'down'; storage: 'ok' | 'down' }> {
-  const database = (await withDeadline(prisma.$queryRaw`SELECT 1`)) ? 'ok' : 'down'
-  const storage = (await withDeadline(checkStorage())) ? 'ok' : 'down'
+  const database = (await withDeadline(probeDatabase())) ? 'ok' : 'down'
+  const storage = (await withDeadline(probeStorage())) ? 'ok' : 'down'
   const verdict = { database, storage } as const
   healthVerdict = { ...verdict, at: Date.now() }
   return verdict
+}
+
+/**
+ * The database's answer to `SELECT 1`.
+ *
+ * The reason a layer is down is logged rather than returned: the response
+ * says which layer failed, and the log says why, which is what makes a
+ * failure diagnosable from the outside.
+ */
+async function probeDatabase(): Promise<unknown> {
+  try {
+    return await prisma.$queryRaw`SELECT 1`
+  } catch (err) {
+    console.error('Health check: the database did not answer:', err)
+    throw err
+  }
+}
+
+/** The upload store's answer to a one-entry listing. */
+async function probeStorage(): Promise<boolean> {
+  try {
+    return await checkStorage()
+  } catch (err) {
+    console.error('Health check: the upload store did not answer:', err)
+    throw err
+  }
 }
 
 /**
@@ -201,8 +245,8 @@ app.get('/api/health', async (req, res) => {
   res.status(status === 'ok' ? 200 : 503).json({
     status,
     timestamp: new Date().toISOString(),
-    runtime: isProduction ? 'serverless' : 'node',
-    storage: process.env.BLOB_READ_WRITE_TOKEN ? 'blob' : 'disk',
+    runtime: runtimeName(),
+    storage: storeName(),
     /** Whether each layer answered, for the connectivity controller. */
     database,
     storageReady: storage,

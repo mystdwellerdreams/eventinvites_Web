@@ -3,6 +3,7 @@ import { prisma } from '../utils/prisma'
 import { asyncHandler, AppError } from '../middleware/errorHandler'
 import { authMiddleware, requireAdmin } from '../middleware/auth'
 import { activityQuerySchema, updateActivitySettingsSchema } from '../utils/validation'
+import { queryValue } from '../types'
 import {
   areCommentsLogged,
   ensureUpcomingEventEntries,
@@ -25,8 +26,8 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const query = activityQuerySchema.parse({
-      category: req.query.category,
-      sort: req.query.sort,
+      category: queryValue(req.query.category),
+      sort: queryValue(req.query.sort),
     })
 
     // An event that has come into range is announced here, once.

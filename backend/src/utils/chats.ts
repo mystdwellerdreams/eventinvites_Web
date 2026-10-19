@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+﻿import { Prisma } from '../generated/prisma/client'
 import { prisma } from './prisma'
 import { notifyUser, notifyUsers } from './notifications'
 import { sanitizeHtml } from './sanitizeHtml'
@@ -116,7 +116,7 @@ export function plainPreview(body: string, max = 160): string {
     .replace(/&quot;/g, '"')
     .replace(/\s+/g, ' ')
     .trim()
-  return text.length > max ? `${text.slice(0, max - 1)}…` : text
+  return text.length > max ? `${text.slice(0, max - 1)}вЂ¦` : text
 }
 
 /**
@@ -178,7 +178,7 @@ export async function markChatRead(chatId: string, userId: string): Promise<void
  * Writes one message of a SUPPORT or ADMIN chat, moves the chat to the
  * top of the list and raises the notification. A message written from the
  * Messages section is feedback too, so it is logged where the feedback
- * form's messages already are — pass `log: false` when the caller logs it
+ * form's messages already are вЂ” pass `log: false` when the caller logs it
  * with an attachment instead.
  */
 export async function postChatMessage(
@@ -376,7 +376,7 @@ export async function eventThreadMessages(
 
 /**
  * Unread counts for a set of chats, in one round-trip. Each chat's
- * cutoff is its own read state — the moment the reader last looked — which
+ * cutoff is its own read state вЂ” the moment the reader last looked вЂ” which
  * a per-chat query cannot express, so the two counts are correlated
  * subqueries joined against the reader's read marker.
  */
@@ -520,7 +520,7 @@ export async function listChats(viewer: ChatViewer): Promise<ChatSummary[]> {
       counterpartId = row.admin.id
       counterpartRole = 'ADMIN'
     } else {
-      title = row.event?.title ?? '—'
+      title = row.event?.title ?? 'вЂ”'
       avatar = null
     }
 
@@ -607,7 +607,7 @@ export async function loadThread(
       ? SUPPORT_DISPLAY_NAME
       : row.kind === 'ADMIN' && row.admin
         ? row.admin.name
-        : row.event?.title ?? '—'
+        : row.event?.title ?? 'вЂ”'
   const avatar =
     row.kind === 'SUPPORT' || row.kind === 'EVENT'
       ? row.user.avatar && !isOwner

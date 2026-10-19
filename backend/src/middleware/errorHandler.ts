@@ -1,6 +1,7 @@
-import { Request, Response, NextFunction } from 'express'
+﻿import { Request, Response, NextFunction } from 'express'
 import { ZodError } from 'zod'
-import { Prisma } from '@prisma/client'
+import { Prisma } from '../generated/prisma/client'
+import { ApiRequest } from '../types'
 
 export class AppError extends Error {
   constructor(
@@ -53,13 +54,13 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
 }
 
 type AsyncRequestHandler = (
-  req: Request,
+  req: ApiRequest,
   res: Response,
   next: NextFunction
 ) => Promise<unknown>
 
 export const asyncHandler =
   (fn: AsyncRequestHandler) =>
-  (req: Request, res: Response, next: NextFunction): void => {
+  (req: ApiRequest, res: Response, next: NextFunction): void => {
     Promise.resolve(fn(req, res, next)).catch(next)
   }

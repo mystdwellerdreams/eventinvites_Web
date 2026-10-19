@@ -7,13 +7,13 @@ customize events, and registered users sign up for them.
 
 | Layer      | Technology                                     |
 | ---------- | ---------------------------------------------- |
-| Frontend   | Next.js App Router, React 18, TypeScript       |
-| Backend    | Node.js, Express, TypeScript, Zod              |
-| Database   | PostgreSQL via Prisma ORM                      |
-| Uploads    | Local disk in development, Vercel Blob in production |
+| Frontend   | React 18, React Router, Vite, TypeScript       |
+| Backend    | Node.js, Express 5, TypeScript, Zod            |
+| Database   | PostgreSQL via Prisma ORM, reached through Hyperdrive |
+| Uploads    | Local disk in development, Neon Object Storage in production |
 | Auth       | JWT access + refresh tokens in HttpOnly cookies |
 | Mobile     | Capacitor Android shell (WebView) + FCM push   |
-| Deployment | Vercel (Next.js pages and serverless API)      |
+| Deployment | Cloudflare Workers: the API and the web app from one origin |
 
 ## Getting started
 
@@ -29,7 +29,7 @@ npm run dev          # Next.js on :3000, serving the pages and the API
 Open http://localhost:3000.
 
 > **PostgreSQL is required.** An earlier version used a SQLite file, which
-> cannot work on Vercel: serverless filesystems are ephemeral, so every deploy
+> cannot work on a serverless host: the filesystem is ephemeral, so every deploy
 > and cold start would wipe the database. Point `DATABASE_URL` at any
 > PostgreSQL server — Neon, Supabase, or one you run locally.
 
@@ -284,23 +284,33 @@ its tags, exactly like the event page.
 ## Project layout
 
 ```
-vercel.json               Vercel build: migrate, then next build
-neon.ts                   Neon config (infrastructure as code)
+wrangler.jsonc             Cloudflare Worker: the API, the assets, Hyperdrive
+vercel.json                the Vercel deployment, kept as a second option
+neon.ts                    Neon config (infrastructure as code)
+
+worker/
+  index.ts                 the Worker entry: the Express app behind node:http
+  tsconfig.json            type-checking for the Worker and the API
+web/
+  vite.config.ts           the web build: the same app, from the same src/
+  dist/                    the built assets the Worker serves (gitignored)
+vite.shared.ts             the Vite settings both bundles share
 
 backend/
   package.json            the API workspace (installed by the root npm install)
-  .vercelignore           applied when backend/ is the Vercel project root
   scripts/                deploy-migrations.mjs, a DATABASE_URL preflight
   prisma/schema.prisma    data model (PostgreSQL)
+  prisma.config.ts        where the Prisma CLI reads the connection URL from
   prisma/migrations/      checked-in migrations applied on deploy
   prisma/seed.ts          default accounts and sample events
   src/app.ts              Express app: middleware and routes, no listen()
   src/index.ts            long-running bootstrap (dev, Railway, Render, a VM)
+  src/types.ts            the request shape, and how a query value is read
   src/middleware/         auth, role guard, error handling
   src/routes/             auth, events, users, admin, tags, upload, devices
   src/utils/              Prisma client, Zod schemas, roles, storage, push
 app/                      Next.js App Router pages and the /api catch-all
-  api/[...path]/route.ts  the only serverless entry: it adapts the Express app
+  api/[...path]/route.ts  the Vercel serverless entry: it adapts the Express app
                           to a route handler, so pages and API share an origin
 src/
   components/             layout, auth modal, event card, bell, native bridge
@@ -312,17 +322,23 @@ capacitor.config.ts       Android shell: app id, name and the server it loads
 mobile/
   app/                    Vite entry: index.html, main.tsx, App.tsx (route table)
   www/                    Vite build output, bundled into the APK (gitignored)
-  vite.config.ts          aliases next/link → navigation.router.tsx
+  vite.config.ts          the APK bundle
   scripts/                generate-assets.mjs: icons and splash from public/logo.png
-capacitor.config.ts       Android shell: appId, webDir, and dev/release mode (CAPACITOR_DEV)
 android/                  Capacitor Android project (Gradle, manifest, resources)
 docs/ANDROID.md           Firebase setup, the build steps, and how push is wired
+docs/CLOUDFLARE.md        the Worker's setup, its secrets, and how to deploy it
 ```
 
-`app.ts` and `index.ts` are split deliberately: the Next catch-all imports
-`app` as a request handler and never calls `listen`, while `npm run dev:backend`
-and any long-running host start a normal server. There is one serverless entry,
-`app/api/[...path]/route.ts`, and it exports the same app.
+The app is built twice from one `src/`: for the browser and for the Android
+WebView. `mobile/app/App.tsx` holds the route table, and the alias
+`next/link` → `src/utils/navigation.router.tsx` means no source file has to
+know which bundle it is in. The web build is served by the Worker from the
+same origin as the API, so the browser's calls are same-origin and need no
+CORS preflight.
+
+`app.ts` and `index.ts` are split deliberately: the serverless entries import
+`app` as a request handler and never call `listen`, while `npm run dev:backend`
+and any long-running host start a normal server.
 
 ## Notes on the data model
 
@@ -344,7 +360,7 @@ previous owner's notifications.
 
 The Android app is a Capacitor shell around the same `src/` the browser uses.
 Instead of loading the deployed site in a WebView, the shell ships a **Vite
-build** of `src/` bundled into `mobile/www/` — React Router replaces the Next.js
+build** of `src/` bundled into `mobile/www/` — React Router replaces the
 router via an alias (`next/link` → `src/utils/navigation.router.tsx`), and auth
 uses `Authorization: Bearer` headers against the deployed API, not cookies (the
 WebView's `https://localhost` origin makes cookies third-party, and the Android
@@ -354,7 +370,7 @@ place of it.
 
 ```bash
 npm run app:build                     # bundle src/ → mobile/www/
-VITE_API_BASE=https://your-app.vercel.app/api npm run app:build
+VITE_API_BASE=https://eventinvites.mystdwellerdreams.workers.dev/api npm run app:build
 npm run android:sync                  # cap sync, copies www into android/
 npm run android:open                  # Android Studio: select a device, press Run
 ```
@@ -378,13 +394,45 @@ The three pieces that make push work:
 payload reference and troubleshooting. Push needs no changes to the web
 deployment: with `FCM_SERVICE_ACCOUNT_JSON` unset the push layer is a no-op.
 
+## Deploying to Cloudflare
+
+The application runs as **one Cloudflare Worker**. The Worker serves the API
+and the web app from the same origin, so the browser's calls are same-origin
+and the auth cookies are ordinary first-party ones.
+
+[`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md) has the step-by-step setup: the
+Hyperdrive connection, the Worker's secrets, the local development loop and
+the GitHub secrets the deploy workflow needs.
+
+| Setting        | Value                                                        |
+| -------------- | ------------------------------------------------------------ |
+| Worker name    | `eventinvites` → `eventinvites.<account>.workers.dev`         |
+| Build          | `npm run web:build`, then `wrangler deploy`                   |
+| Static assets  | `web/dist`, with a single-page fallback for deep links       |
+| Database       | Neon PostgreSQL through a Hyperdrive binding                  |
+| Uploads        | Neon Object Storage, in the bucket on the same Neon branch   |
+
+The API and the web app share an origin, so `FRONTEND_URL` only has to list
+the origins that come from somewhere else: the Android app's `https://localhost`
+WebView is one of them.
+
+Two things are worth knowing before deploying:
+
+- **The Workers Free plan is not enough.** It allows ten milliseconds of CPU
+  per request, and hashing a password with bcrypt takes longer. The paid plan
+  starts at five dollars a month.
+- **The Prisma client is created per request.** The Workers runtime does not
+  let a socket opened during one request be used by another, so a client held
+  at module level answers the first request and hangs the second.
+  `backend/src/utils/prisma.ts` puts the request's own client in scope instead.
+
 ## Deploying to Vercel
 
-The repository deploys as **one Vercel project** rooted at the repository root.
-The root `vercel.json` runs `prisma generate && prisma migrate deploy &&
-next build`, and `app/api/[...path]/route.ts` mounts the Express app as the
-only serverless function, so the pages and the API share one origin and one
-domain.
+The Vercel deployment is still there and still works: **one Vercel project**
+rooted at the repository root. The root `vercel.json` runs `prisma generate &&
+prisma migrate deploy && next build`, and `app/api/[...path]/route.ts` mounts
+the Express app as the only serverless function, so the pages and the API
+share one origin and one domain.
 
 | Setting        | Value                                                      |
 | -------------- | ---------------------------------------------------------- |
@@ -400,7 +448,11 @@ migrations, so preview builds need them too):
 | `DATABASE_URL`          | yes      | PostgreSQL connection string                   |
 | `JWT_SECRET`            | yes      | signs access tokens                            |
 | `REFRESH_SECRET`        | yes      | signs refresh tokens                           |
-| `BLOB_READ_WRITE_TOKEN` | yes      | object storage for uploaded images             |
+| `AWS_ENDPOINT_URL_S3`   | yes      | the object store for uploaded images           |
+| `AWS_ACCESS_KEY_ID`     | yes      | the object store's key                         |
+| `AWS_SECRET_ACCESS_KEY` | yes      | the object store's secret                      |
+| `AWS_REGION`            | yes      | the object store's region                      |
+| `NEON_STORAGE_BUCKET`   | yes      | the bucket the images live in                  |
 | `TURNSTILE_SECRET_KEY`  | no       | server-side captcha check                      |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | no | inlines the captcha widget                |
 | `FCM_SERVICE_ACCOUNT_JSON` | no    | enables push to the Android app                |
@@ -412,8 +464,9 @@ Generate secrets with `openssl rand -base64 32`.
 
 1. **PostgreSQL.** Neon, Supabase or Vercel Postgres. Copy the connection
    string. Strip any surrounding quotes.
-2. **Blob.** Create a Blob store in the project. Without it, uploads fall back
-   to the ephemeral function filesystem and are lost on the next cold start.
+2. **Object storage.** A Neon Object Storage bucket on the same branch as the
+   database, with a key pair. Without it, uploads fall back to the ephemeral
+   filesystem and are lost on the next cold start.
 
 ### Cookies and CORS
 
@@ -440,11 +493,12 @@ quickest way to confirm the deployment is configured as intended.
 ### Uploaded image URLs
 
 Uploads are stored in the database as `/uploads/<file>`, which resolves against
-the current origin — correct while one server serves both. If the API ever
-moves to another origin, `resolveAssetUrl()` in `src/utils/api.ts` prefixes
-those paths with `NEXT_PUBLIC_API_BASE`, and absolute or `data:` URLs pass
-through untouched. It is a no-op while that variable is unset, so one code path
-serves local development, production and the Android app.
+the current origin — correct while one server serves both, which is what the
+Worker does. If the API ever moves to another origin, `resolveAssetUrl()` in
+`src/utils/api.ts` prefixes those paths with the API's own origin, and
+absolute or `data:` URLs pass through untouched. It is a no-op while the API
+and the page share an origin, so one code path serves local development,
+production and the Android app.
 
 ### Migrating an existing database
 
@@ -470,7 +524,7 @@ or point at an empty database.
 | `npm run lint`            | Lint the Next.js app                           |
 | `npm run db:generate`     | Generate the Prisma client                     |
 | `npm run db:migrate`      | Create a new migration                         |
-| `npm run db:deploy`       | Apply migrations (used on Vercel)              |
+| `npm run db:deploy`       | Apply migrations (used on deploy)               |
 | `npm run db:check`        | Preflight the migrations without applying them |
 | `npm run db:seed`         | Seed default accounts and sample events        |
 | `npm run db:studio`       | Open Prisma Studio                             |
@@ -483,16 +537,24 @@ or point at an empty database.
 | `npm run android:open`    | Open `android/` in Android Studio              |
 | `npm run android:run`     | Install and run on a connected device/emulator |
 | `npm run android:build`   | Build an APK or AAB from the Android project   |
+| `npm run web:build`       | Bundle `src/` into `web/dist/` for the Worker   |
+| `npm run worker:dev`      | The Worker on :8787, with the app and the API   |
+| `npm run worker:deploy`   | Deploy the Worker                              |
+| `npm run worker:check`    | Check a running Worker the way the app uses it  |
+| `npm run worker:typecheck` | Type-check the Worker and the API              |
+| `npm run cf:dev-vars`     | Write `.dev.vars` for the local Worker         |
+| `npm run deploy:cloudflare` | Build the web app and deploy the Worker       |
 
-Uploaded images go to `backend/uploads` in development, served from `/uploads`.
-When `BLOB_READ_WRITE_TOKEN` is set they are written to Vercel Blob instead and
-the database stores the store's URL.
+Uploaded images go to `backend/uploads` in development, served from
+`/uploads`. When the object store is configured they are written to it
+instead, and the database stores the file's path.
 
-Both kinds of Blob store work. A **public** store is answered with a redirect
-from `/uploads/<file>`, so browsers still fetch the bytes from the CDN without
-invoking the serverless function. A **private** store refuses public uploads,
-so the upload is retried with private access — the mode is remembered in a
-setting — and `/uploads/<file>` then serves the bytes itself, which is the only
-way a private store can be read at all. Either way `/uploads/<file>` is what
-the browser requests, so one code path covers disk, public and private storage.
-The `uploads` directory is excluded from version control.
+The store's access level is a property of the bucket rather than of the
+request, so it is stated in the environment instead of being probed. A
+**public** bucket is answered with a redirect from `/uploads/<file>`, so
+browsers fetch the bytes from the store without invoking the Worker. A
+**private** bucket is read with the credentials and served by the Worker,
+which is the only way a private bucket can be read at all. Either way
+`/uploads/<file>` is what the browser requests, so one code path covers disk
+and both kinds of object storage. The `uploads` directory is excluded from
+version control.
