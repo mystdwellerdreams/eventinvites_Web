@@ -1,0 +1,29 @@
+.cover-images{display:flex;flex-direction:column;gap:10px}
+.cover-images-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.cover-images-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px}
+.cover-images-row.is-primary{background:#eff6ff;border-color:#bfdbfe}
+.cover-images-badge{flex-shrink:0;padding:2px 9px;border-radius:999px;background:#dbeafe;color:#1e40af;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.cover-images-fields{display:flex;align-items:center;gap:6px;flex:1 1 280px;min-width:0}
+.cover-images-fields>input{flex:1 1 auto;min-width:0}
+.cover-images-upload{flex-shrink:0;white-space:nowrap;cursor:pointer}
+.cover-images-controls{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.cover-images-thumb{flex-shrink:0;width:76px;height:57px;border-radius:6px;overflow:hidden;background:#eef2f7;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center}
+.cover-images-thumb img{width:100%;height:100%;max-width:none;object-fit:cover;display:block}
+.cover-images-thumb-empty{font-size:.68rem;color:#94a3b8}
+.cover-images-error{margin:0;color:#b91c1c;font-size:.82rem}
+.cover-images-footer{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.cover-images-count{font-size:.82rem;color:#64748b}
+@media (max-width:640px), (orientation: portrait){
+  .cover-images-row{gap:8px;padding:10px}
+  .cover-images-fields{flex:1 1 100%}
+  .cover-images-thumb{width:64px;height:48px}
+}
+
+/* ---- Dark theme: diametrically opposite tones ---- */
+[data-theme="dark"] .cover-images-row{background:#1f2937;border-color:#374151}
+[data-theme="dark"] .cover-images-row.is-primary{background:#1e3a5f;border-color:#1e3a5f}
+[data-theme="dark"] .cover-images-badge{background:#1e3a5f;color:#93c5fd}
+[data-theme="dark"] .cover-images-thumb{background:#374151;border-color:#4b5563}
+[data-theme="dark"] .cover-images-thumb-empty{color:#6b7280}
+[data-theme="dark"] .cover-images-error{color:#f87171}
+[data-theme="dark"] .cover-images-count{color:#9ca3af}

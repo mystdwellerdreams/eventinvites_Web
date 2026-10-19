@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+out/
+dist/
+backend/dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Vercel project link. Contains the project and team ids.
+.vercel/
+
+# Environment and secrets. Only the templates are tracked.
+.env*
+!.env.example
+backend/.env*
+!backend/.env.example
+firebase-adminsdk-key.json
+*.jks
+*.keystore
+*.p12
+keystore.properties
+
+# Native Android
+android/.gradle/
+android/**/build/
+android/local.properties
+android/app/google-services.json
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+
+# Generated web bundle for the APK
+mobile/www/
+
+# User uploads. Never publish real user images.
+backend/uploads/
+
+# Installables
+*.apk
+*.aab
+
+# OS and editor
+.DS_Store
+Thumbs.db
+.idea/

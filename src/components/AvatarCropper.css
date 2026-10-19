@@ -1,0 +1,16 @@
+.avatar-cropper-overlay{position:fixed;top:0;right:0;bottom:0;left:0;background:#000000b3;display:flex;align-items:center;justify-content:center;z-index:var(--z-overlay);padding:16px;overflow:hidden}
+.avatar-cropper{background:#fff;border-radius:12px;padding:24px;max-width:420px;width:100%;max-height:calc(100dvh - 32px);overflow-y:auto}
+.avatar-cropper h3{margin:0 0 4px;text-align:center;color:#1a1a1a}
+.avatar-cropper-hint{margin:0 0 16px;text-align:center;color:#666;font-size:.85rem}
+.avatar-cropper-stage{position:relative;display:flex;justify-content:center;margin-bottom:16px}
+.avatar-cropper-canvas{width:min(300px,58dvh);height:min(300px,58dvh);border-radius:50%;cursor:grab;background:#e5e7eb;touch-action:none}
+.avatar-cropper-canvas.is-dragging{cursor:grabbing}
+.avatar-cropper-source{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;top:0;left:0}
+.avatar-cropper-controls{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.avatar-cropper-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:8px}
+
+/* ---- Dark theme: diametrically opposite tones ---- */
+[data-theme="dark"] .avatar-cropper{background:#1f2937}
+[data-theme="dark"] .avatar-cropper h3{color:#f9fafb}
+[data-theme="dark"] .avatar-cropper-hint{color:#9ca3af}
+[data-theme="dark"] .avatar-cropper-canvas{background:#374151}

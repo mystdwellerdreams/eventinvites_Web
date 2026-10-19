@@ -1,0 +1,105 @@
+/* Activity log, at the bottom of the administrator's Status tab. */
+.al-section{margin-top:28px}
+.al-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.al-header h3{margin:0 0 4px}
+.al-header .admin-hint{margin:0;max-width:60ch}
+.al-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.al-sort{display:flex;align-items:center;gap:8px;font-size:.82rem;color:#4b5563}
+.al-sort select{height:32px;padding:0 8px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#111827;font:inherit;font-size:.82rem}
+.al-clear{border:1px solid #d1d5db;background:#fff;color:#b91c1c;border-radius:8px;padding:6px 12px;font-size:.78rem;font-weight:700;cursor:pointer}
+.al-clear:hover:not(:disabled){background:#fef2f2;border-color:#fca5a5}
+.al-clear:disabled{opacity:.5;cursor:not-allowed}
+.al-filters{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0}
+.al-filter{border:1px solid #d1d5db;background:#fff;color:#374151;border-radius:999px;padding:5px 12px;font-size:.76rem;font-weight:600;cursor:pointer}
+.al-filter:hover{background:#f3f4f6}
+.al-filter.is-active{background:#1f2937;border-color:#1f2937;color:#fff}
+.al-comment-toggle{display:inline-flex;align-items:center;gap:8px;font-size:.82rem;color:#374151;cursor:pointer}
+.al-comment-toggle-hint{margin:2px 0 0;font-size:.74rem;color:#9ca3af}
+.al-loading{display:flex;align-items:center;gap:10px;color:#6b7280;font-size:.85rem}
+.al-list{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.al-entry{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:#fff;border:1px solid #0000000f;border-radius:10px;position:relative}
+.al-entry.is-feedback{cursor:pointer}
+.al-entry.is-actionable{cursor:pointer}
+.al-entry.is-feedback:hover,.al-entry.is-actionable:hover{background:#f9fafb}
+.al-entry.is-feedback:focus-visible,.al-entry.is-actionable:focus-visible{outline:2px solid #3b82f6;outline-offset:1px}
+/* An entry armed by its corner X, waiting for the confirming click. */
+.al-entry.is-armed{background:#fef2f2;border-color:#fca5a5}
+.al-remove{position:absolute;top:6px;right:8px;z-index:1;width:22px;height:22px;border:0;border-radius:6px;background:none;color:#9ca3af;font-size:.72rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
+.al-entry:hover .al-remove,.al-remove:focus-visible,.al-remove.is-armed{opacity:1}
+.al-remove:hover{background:#fee2e2;color:#b91c1c}
+.al-remove.is-armed{background:#fee2e2;color:#b91c1c;font-weight:700}
+.al-go{align-self:center;color:#9ca3af;font-size:1.1rem;line-height:1;padding:0 2px;margin-right:18px}
+/* The corner X owns the top-right; the row's own indicators keep clear. */
+.al-chevron{margin-right:18px}
+.al-confirm-text{margin:0 0 18px;font-size:.88rem;line-height:1.6;color:#374151}
+.al-confirm-actions{display:flex;justify-content:flex-end;gap:10px}
+.al-icon{font-size:1.05rem;line-height:1.4}
+.al-body{flex:1;min-width:0}
+.al-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px}
+.al-category{font-weight:700;font-size:.82rem;color:#111827}
+.al-target{font-size:.82rem;color:#374151}
+.al-actor{font-size:.78rem;color:#6b7280;margin-left:auto;white-space:nowrap}
+.al-detail{margin:2px 0 0;font-size:.76rem;color:#9ca3af;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.al-time{display:block;margin-top:4px;font-size:.7rem;color:#9ca3af}
+.al-chevron{color:#9ca3af;font-size:.8rem}
+.al-feedback-detail{margin:6px 0 4px;padding:14px 16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px}
+.al-feedback-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+.al-feedback-sender{font-weight:700;font-size:.9rem;color:#111827}
+.al-feedback-head time{font-size:.74rem;color:#9ca3af}
+.al-feedback-message{font-size:.88rem;line-height:1.65;color:#1f2937}
+.al-feedback-message p{margin:0 0 8px}
+.al-feedback-message ul,.al-feedback-message ol{margin:0 0 8px;padding-left:22px}
+.al-feedback-message a{color:#1d4ed8}
+.al-feedback-message blockquote{margin:0 0 8px;padding-left:12px;border-left:3px solid #d1d5db;color:#4b5563}
+.al-feedback-message:empty{display:none}
+.al-feedback-attachment{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:7px 12px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#1f2937;font-size:.8rem;font-weight:600;text-decoration:none}
+.al-feedback-attachment:hover{background:#f3f4f6}
+.al-feedback-size{font-weight:400;color:#9ca3af}
+.al-feedback-reply{margin-top:10px;border:1px solid #d1d5db;background:#fff;color:#1d4ed8;border-radius:8px;padding:6px 12px;font-size:.78rem;font-weight:700;cursor:pointer}
+.al-feedback-reply:hover{background:#eff6ff;border-color:#bfdbfe}
+.al-modal-overlay{position:fixed;top:0;right:0;bottom:0;left:0;background:#00000080;display:flex;align-items:center;justify-content:center;z-index:var(--z-modal);padding:16px}
+.al-modal{background:#fff;border-radius:12px;width:100%;max-width:560px;max-height:calc(100dvh - 32px);overflow-y:auto;padding:22px 24px;box-shadow:0 20px 50px #0000004d}
+.al-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.al-modal-head h4{margin:0;font-size:1rem;color:#111827}
+.al-modal-close{border:0;background:none;font-size:1.2rem;line-height:1;cursor:pointer;color:#6b7280;padding:2px 6px}
+.al-modal-close:hover{color:#111827}
+
+/* ---- Dark theme ---- */
+[data-theme="dark"] .al-sort{color:#d1d5db}
+[data-theme="dark"] .al-sort select{background:#1f2937;border-color:#4b5563;color:#f9fafb}
+[data-theme="dark"] .al-filter{background:#1f2937;border-color:#4b5563;color:#d1d5db}
+[data-theme="dark"] .al-filter:hover{background:#374151}
+[data-theme="dark"] .al-filter.is-active{background:#f9fafb;border-color:#f9fafb;color:#111827}
+[data-theme="dark"] .al-comment-toggle{color:#d1d5db}
+[data-theme="dark"] .al-entry{background:#1f2937d9;border-color:#ffffff14}
+[data-theme="dark"] .al-entry.is-feedback:hover,[data-theme="dark"] .al-entry.is-actionable:hover{background:#374151}
+[data-theme="dark"] .al-go{color:#9ca3af}
+[data-theme="dark"] .al-category{color:#f9fafb}
+[data-theme="dark"] .al-target{color:#e5e7eb}
+[data-theme="dark"] .al-actor,[data-theme="dark"] .al-detail,[data-theme="dark"] .al-time,[data-theme="dark"] .al-chevron,[data-theme="dark"] .al-comment-toggle-hint,[data-theme="dark"] .al-loading{color:#9ca3af}
+[data-theme="dark"] .al-feedback-detail{background:#111827d9;border-color:#374151}
+[data-theme="dark"] .al-feedback-sender{color:#f9fafb}
+[data-theme="dark"] .al-feedback-message{color:#e5e7eb}
+[data-theme="dark"] .al-feedback-message a{color:#60a5fa}
+[data-theme="dark"] .al-feedback-message blockquote{border-left-color:#4b5563;color:#d1d5db}
+[data-theme="dark"] .al-feedback-attachment{background:#1f2937;border-color:#4b5563;color:#f9fafb}
+[data-theme="dark"] .al-feedback-attachment:hover{background:#374151}
+[data-theme="dark"] .al-feedback-size{color:#9ca3af}
+[data-theme="dark"] .al-feedback-reply{background:#1f2937;border-color:#4b5563;color:#93c5fd}
+[data-theme="dark"] .al-feedback-reply:hover{background:#1e3a8a;border-color:#3b82f6}
+[data-theme="dark"] .al-modal{background:#1f2937;box-shadow:0 20px 50px #00000080}
+[data-theme="dark"] .al-controls .al-sort{color:#d1d5db}
+[data-theme="dark"] .al-clear{background:#1f2937;border-color:#4b5563;color:#fca5a5}
+[data-theme="dark"] .al-clear:hover:not(:disabled){background:#7f1d1d;border-color:#b91c1c;color:#fecaca}
+[data-theme="dark"] .al-remove{color:#9ca3af}
+[data-theme="dark"] .al-remove:hover,[data-theme="dark"] .al-remove.is-armed{background:#7f1d1d;color:#fecaca}
+[data-theme="dark"] .al-entry.is-armed{background:#7f1d1d80;border-color:#b91c1c}
+[data-theme="dark"] .al-confirm-text{color:#d1d5db}
+[data-theme="dark"] .al-modal-head h4{color:#f9fafb}
+[data-theme="dark"] .al-modal-close{color:#9ca3af}
+[data-theme="dark"] .al-modal-close:hover{color:#f9fafb}
+
+@media (max-width:640px){
+  .al-actor{margin-left:0;width:100%}
+  .al-header{flex-direction:column}
+}

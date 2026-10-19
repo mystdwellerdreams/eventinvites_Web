@@ -1,0 +1,37 @@
+.social-links-editor{display:flex;flex-direction:column;gap:12px}
+.social-links-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.social-link-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px}
+.social-link-icon{flex-shrink:0;font-size:1rem}
+.social-link-name{font-weight:600;color:#1f2937;white-space:nowrap}
+.social-link-url{flex:1 1 180px;min-width:0;color:#2563eb;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.social-links-empty{padding:10px 12px;color:#6b7280;font-size:.85rem;font-style:italic}
+.social-links-addmenu{position:relative;display:inline-block}
+.social-platform-menu{position:absolute;left:0;top:calc(100% + 6px);z-index:var(--z-dropdown);min-width:200px;padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 12px 30px #0000002e}
+.social-platform-option{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;background:none;border:none;border-radius:6px;cursor:pointer;font-size:.88rem;text-align:left;color:#1f2937}
+.social-platform-option:hover{background:#f3f4f6}
+.social-platform-option:focus-visible{outline:2px solid #3b82f6;outline-offset:-2px}
+.social-link-form{display:flex;flex-direction:column;gap:6px;padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin-top:10px}
+.social-link-form-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+.social-link-form-title{font-weight:600;color:#1f2937}
+.social-link-form label{font-size:.8rem;color:#475569;margin-bottom:0}
+.social-link-preview{margin:2px 0;font-size:.8rem;color:#475569;overflow-wrap:anywhere}
+.social-link-preview code{background:#e2e8f0;padding:1px 5px;border-radius:4px}
+.social-link-preview-bad{color:#b91c1c;font-weight:500}
+.social-links{margin-top:8px;padding-top:16px;border-top:1px solid #e5e7eb;display:flex;flex-direction:column;gap:16px}
+.social-links h4,.profile-form h4{margin:0;color:#1a1a1a}
+
+/* ---- Dark theme: diametrically opposite tones ---- */
+[data-theme="dark"] .social-link-row{background:#1f2937;border-color:#374151}
+[data-theme="dark"] .social-link-name{color:#f9fafb}
+[data-theme="dark"] .social-link-url{color:#60a5fa}
+[data-theme="dark"] .social-links-empty{color:#9ca3af}
+[data-theme="dark"] .social-platform-menu{background:#1f2937;border-color:#374151;box-shadow:0 12px 30px #00000080}
+[data-theme="dark"] .social-platform-option{color:#e5e7eb}
+[data-theme="dark"] .social-platform-option:hover{background:#374151}
+[data-theme="dark"] .social-link-form{background:#1f2937;border-color:#374151}
+[data-theme="dark"] .social-link-form-title{color:#f9fafb}
+[data-theme="dark"] .social-link-form label,[data-theme="dark"] .social-link-preview{color:#9ca3af}
+[data-theme="dark"] .social-link-preview code{background:#374151;color:#d1d5db}
+[data-theme="dark"] .social-link-preview-bad{color:#f87171}
+[data-theme="dark"] .social-links{border-top-color:#374151}
+[data-theme="dark"] .social-links h4,[data-theme="dark"] .profile-form h4{color:#f9fafb}

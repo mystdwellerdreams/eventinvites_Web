@@ -1,0 +1,28 @@
+/* The connection controller's indicator: only present while a connection
+   is unavailable, so it carries no layout weight the rest of the time. */
+
+.connectivity{position:fixed;right:14px;/* Above the editor's save bar, which owns the bottom edge
+     of that page; measured by the component itself. */bottom:calc(var(--connectivity-offset,0px) + 14px);z-index:60;display:flex;align-items:center;gap:10px;max-width:min(320px,calc(100vw - 28px));padding:10px 14px;background:#fffffff2;border:1px solid #e5e7eb;border-radius:999px;box-shadow:0 6px 20px #00000026;color:#374151;font-size:.85rem;font-weight:500;opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .2s,transform .2s,visibility 0s linear .2s}
+.connectivity.is-visible{opacity:1;visibility:visible;transform:translateY(0);transition:opacity .2s,transform .2s,visibility 0s}
+
+.connectivity-spinner{flex-shrink:0;width:16px;height:16px;border:2px solid #cbd5e1;border-top-color:#3b82f6;border-radius:50%;animation:connectivity-spin .8s linear infinite}
+@keyframes connectivity-spin{to{transform:rotate(360deg)}}
+.connectivity-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.connectivity-countdown{flex-shrink:0;padding:2px 8px;border-radius:999px;background:#3b82f6;color:#fff;font-size:.75rem;font-weight:600;white-space:nowrap}
+/* The confirmation after the connections come back: the same corner, said
+   once, in the colour that means it is over. */
+.connectivity.is-restored{border-color:#a7f3d0;color:#065f46}
+.connectivity-spinner--done{border-color:#a7f3d0;border-top-color:#059669;animation:none}
+
+/* Respect a reduced-motion preference: the spinner still reads as
+   "working", it simply does not turn. */
+@media (prefers-reduced-motion: reduce){
+  .connectivity-spinner{animation:none;border-top-color:#3b82f6}
+}
+
+/* ---- Dark theme ---- */
+[data-theme="dark"] .connectivity{background:#1f2937f2;border-color:#4b5563;color:#d1d5db;box-shadow:0 6px 20px #00000080}
+[data-theme="dark"] .connectivity-spinner{border-color:#4b5563;border-top-color:#60a5fa}
+[data-theme="dark"] .connectivity-countdown{background:#3b82f6;color:#fff}
+[data-theme="dark"] .connectivity.is-restored{background:#064e3bf2;border-color:#065f46;color:#a7f3d0}
+[data-theme="dark"] .connectivity-spinner--done{border-color:#065f46;border-top-color:#34d399}

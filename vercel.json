@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run db:generate --workspace=backend && npm run db:deploy --workspace=backend && next build",
+  "installCommand": "npm install --include=dev",
+  "framework": "nextjs",
+  "functions": {
+    "app/api/[...path]/route.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  }
+}

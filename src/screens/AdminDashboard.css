@@ -1,0 +1,242 @@
+.badge-guest{background:#f3e8ff;color:#6b21a8}
+.admin-dashboard{padding:24px 0}
+.admin-dashboard h1{margin:0 0 24px;color:#1a1a1a}
+.admin-hint{margin:-8px 0 16px;font-size:.875rem;color:#6b7280;max-width:70ch}
+.admin-muted{color:#9ca3af;font-style:italic;font-size:.8rem}
+.tag-assign-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto}
+.tag-assign-row{display:flex;align-items:center;gap:10px;padding:7px 10px;background:#fff;border:1px solid #e5e7eb;border-radius:8px}
+.tag-assign-search{width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:.85rem;margin-bottom:10px}
+.tag-assign-name{font-weight:500;color:#1f2937}
+.tag-assign-email{flex:1;font-size:.78rem;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag-assign-menu{position:relative;display:inline-block}
+.tag-assign-menu .caret{margin-left:5px;font-size:.7em;opacity:.7}
+.tag-assign-popover{position:absolute;left:0;top:calc(100% + 6px);z-index:var(--z-dropdown);width:max-content;max-width:320px;padding:12px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 12px 30px #00000029}
+.tag-assign-popover-hint{margin:0 0 10px;font-size:.78rem;color:#6b7280}
+.tag-assign-close{margin-top:10px;width:100%}
+.admin-tag-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.admin-tag-chip{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:.7rem;font-weight:600;white-space:nowrap}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
+.stats-grid--pair{grid-template-columns:repeat(2,minmax(0,1fr))}
+.stat-card{background:#fff;padding:20px;border-radius:12px;text-align:center;box-shadow:0 1px 3px #00000014}
+.stat-card--link{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;border:1px solid #e5e7eb;color:inherit;cursor:pointer;font-family:inherit;transition:border-color .2s,box-shadow .2s}
+.stat-card--link:hover{border-color:#93c5fd;box-shadow:0 2px 8px #00000014}
+.stat-card--link:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
+.stat-value{font-size:2rem;font-weight:700;color:#3b82f6}
+.stat-detail{font-size:.55em;font-weight:600;color:#6b7280;margin-left:4px}
+.stat-label{font-size:.85rem;color:#666;margin-top:4px}
+.stat-sub{font-size:.72rem;color:#9ca3af}
+.admin-tabs{display:flex;gap:8px;margin-bottom:24px;border-bottom:2px solid #e0e0e0}
+.admin-tabs button{padding:10px 20px;background:none;border:none;cursor:pointer;font-size:.9rem;font-weight:500;color:#666;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .2s,border-color .2s}
+.admin-tabs button:hover{color:#1a1a1a}
+.admin-tabs button.active{color:#3b82f6;border-bottom-color:#3b82f6}
+/* Icons ride along with each tab; the wide layout shows text only. */
+.tab-icon{display:none}
+.admin-section .stats-grid{margin-bottom:0}
+
+/* Sub-tabs within the Users section. */
+.admin-subtabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:2px solid #e0e0e0}
+.admin-subtabs button{padding:8px 16px;background:none;border:none;cursor:pointer;font-size:.85rem;font-weight:500;color:#666;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .2s,border-color .2s}
+.admin-subtabs button:hover{color:#1a1a1a}
+.admin-subtabs button.active{color:#3b82f6;border-bottom-color:#3b82f6}
+
+/* Users search panel: the search bar matches the Tags tab, with the
+   tag-search checkbox tucked into the corner beneath it. */
+.users-search-panel{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.users-search-row{display:flex;gap:8px;align-items:center}
+.users-search-row .tag-assign-search{flex:1;min-width:0;margin-bottom:0}
+.users-sort{display:flex;align-items:center;gap:6px;font-size:.85rem;color:#6b7280;white-space:nowrap}
+.users-toggle{display:flex;align-items:center;justify-content:flex-end;gap:6px;font-size:.85rem;color:#6b7280;cursor:pointer;user-select:none}
+.users-toggle input{width:auto;accent-color:#3b82f6;cursor:pointer}
+/* Phones: the filter button takes the sort dropdown's slot in the
+   search row, and the menu opens between the search bar and the
+   user list, holding the sorting controls it replaced. */
+.users-filter-btn{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;background:#fff;border:1px solid #d1d5db;border-radius:8px;font-size:1.15rem;line-height:1;cursor:pointer;transition:border-color .2s,box-shadow .2s}
+.users-filter-btn:hover{background:#f3f4f6}
+.users-filter-btn[aria-expanded=true]{border-color:#3b82f6;box-shadow:0 0 0 3px #3b82f61f}
+.users-filter-menu{display:flex;flex-direction:column;gap:10px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px}
+.users-filter-menu .users-sort{width:100%;justify-content:space-between}
+.users-filter-menu .users-sort select{flex:1;min-width:0}
+.users-filter-menu .users-toggle{justify-content:flex-start}
+.users-filter-menu .tag-cloud-wrap{padding-top:8px}
+.admin-section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 1px 3px #00000014;overflow-x:auto}
+.admin-event-link{font-weight:600;color:#1a1a1a;text-decoration:none}
+.admin-event-link:hover{text-decoration:underline}
+.admin-event-key{font-size:.75rem;color:#9ca3af;font-family:Fira Code,ui-monospace,monospace}
+.admin-role-select{width:auto;min-width:150px;padding:6px 10px;font-size:.82rem}
+.admin-self-note{font-size:.8rem;color:#9ca3af;font-style:italic}
+.events-table,.users-table{width:100%;border-collapse:collapse}
+.events-table th,.users-table th{text-align:left;padding:12px;border-bottom:2px solid #e0e0e0;font-weight:600;color:#374151;font-size:.85rem;text-transform:uppercase}
+.events-table td,.users-table td{padding:12px;border-bottom:1px solid #e0e0e0;vertical-align:middle}
+.events-table tr:hover,.users-table tr:hover{background:#f9f9f9}
+.user-cell{display:flex;align-items:center;gap:8px}
+/* .badge and the shared variants come from the global stylesheet. */
+.badge-warning{background:#fef3c7;color:#92400e}
+.badge-admin{background:#dbeafe;color:#1e40af}
+.badge-user{background:#f3f4f6;color:#374151}
+.admin-denied{text-align:center;padding:60px 20px}
+.admin-denied h2{color:#dc2626}
+.admin-event-page{padding:24px 0;max-width:960px;margin:0 auto}
+.admin-denied{text-align:center;padding:60px 20px;color:#6b7280}
+.admin-denied h2{margin:0 0 8px;color:#b91c1c}
+.admin-registrations{padding:24px 0}
+.admin-reg-loading,.admin-reg-error{text-align:center;padding:60px 20px}
+
+/* Guest accounts awaiting approval. */
+.badge-guest{background:#f3e8ff;color:#6b21a8}
+
+.guest-alert{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;padding:14px 16px;background:#faf5ff;border:1px solid #e9d5ff;border-left:3px solid #a855f7;border-radius:10px}
+
+.guest-alert-head{font-size:.9rem;color:#6b21a8}
+
+.guest-alert-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+
+.guest-alert-list li{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;background:#fff;border:1px solid #f3e8ff;border-radius:8px}
+
+.guest-alert-name{font-weight:600;color:#1f2937}
+
+.guest-alert-phone{font-size:.82rem;color:#6b7280}
+
+/* Password reset requests in the Status tab. */
+.reset-requests{margin-top:28px}
+.reset-requests h3{margin:0 0 4px;font-size:1.05rem;color:#1a1a1a}
+.reset-request-list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.reset-request{padding:12px 14px;background:#fff;border:1px solid #e5e7eb;border-left:3px solid #f59e0b;border-radius:10px;display:flex;flex-direction:column;gap:10px}
+.reset-request-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.reset-request-name{font-weight:600;color:#1f2937}
+.reset-request-phone{font-size:.82rem;color:#6b7280}
+.reset-request-time{font-size:.78rem;color:#9ca3af;margin-left:auto}
+.reset-link-row{display:flex;gap:8px;align-items:center}
+.reset-link-row input{flex:1;min-width:0}
+
+.admin-empty-row{text-align:center;padding:24px 12px !important}
+
+/* Quick actions beneath a table cell's main value. */
+.admin-cell-actions{margin-top:6px}
+
+/* Registration cell: the participant count above the management button. */
+.admin-reg-cell{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.admin-reg-count{font-size:1.15rem;font-weight:700;color:#3b82f6;font-variant-numeric:tabular-nums}
+
+/* Event visibility menu in the Events table, mirroring the Visibility
+   section of the event settings. The .tag-mode and .ae-hint rules live
+   in BannersEditor.css, which loads on this route. */
+.event-visibility-menu{display:inline-block;margin-top:6px}
+.event-visibility-menu .caret{margin-left:5px;font-size:.7em;opacity:.7}
+.event-visibility-panel{max-width:480px}
+
+/* The same rules live in AdminEventPage.css, which is not loaded on the
+   dashboard route where the events table renders. */
+.tag-picker{padding:12px;background:#f9fafb;border:1px dashed #d1d5db;border-radius:8px;margin-top:10px}
+.tag-picker .ae-hint{margin:10px 0 0}
+.ae-tag-warning{color:#b45309;font-weight:500}
+.ae-hint.ae-tag-warning{background:#fffbeb;border-color:#fde68a;border-left-color:#f59e0b;color:#92400e}
+.ae-hint.ae-tag-warning:before{content:"!";font-style:normal;background:#f59e0b}
+
+/* An inline menu occupies the space between the event row and the
+   one below it. */
+.inline-menu-row td{padding:12px;background:#f9fafb}
+
+/* Portrait: the tab switcher moves into a full-width button bar
+    pinned to the bottom of the screen, with an icon per tab. */
+@media (orientation: portrait){
+  .admin-tabs{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-header);gap:0;margin-bottom:0;border-bottom:none;border-top:2px solid #e0e0e0;background:#fff;box-shadow:0 -1px 3px #00000014;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .admin-tabs button{flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:10px 2px;font-size:.68rem;border-bottom:none;margin-bottom:0;border-radius:0}
+  .admin-tabs button.active{color:#1e40af;border-bottom:none;background:#eff6ff}
+  .admin-tabs .tab-icon{display:inline-block;font-size:1.3rem;line-height:1}
+  /* Phones carry the panel and its tabs as icons only: the tab
+     names and the panel's own title drop away to save space. */
+  .admin-tabs .tab-label{display:none}
+  .admin-dashboard h1{display:none}
+  /* Keep the footer clear of the pinned bar. */
+  .layout:has(.admin-dashboard) .footer{padding-bottom:76px}
+}
+
+/* Mobile (narrow or portrait): the status cards sit side by
+   side, compact enough to fit the screen without overflowing. */
+@media (max-width:640px), (orientation: portrait){
+  .admin-section{padding:16px}
+  .stats-grid--pair{gap:10px}
+  .stat-card{padding:14px 8px;border-radius:10px}
+  .stat-value{font-size:1.35rem}
+  .stat-detail{margin-left:2px}
+  .stat-label{font-size:.78rem}
+  .stat-sub{font-size:.66rem}
+  .admin-dashboard{padding:12px 0}
+  .admin-section h2{font-size:1.05rem;margin-bottom:12px}
+  .admin-subtabs{gap:4px;margin-bottom:14px}
+  .admin-subtabs button{padding:6px 10px;font-size:.8rem}
+  .events-table th,.users-table th{padding:8px 6px;font-size:.72rem}
+  .events-table td,.users-table td{padding:8px 6px;font-size:.82rem}
+  .admin-role-select{min-width:110px}
+  .guest-alert-list li{padding:6px 8px;gap:8px}
+  .reset-request-head{gap:8px}
+  .reset-request-time{margin-left:0}
+  .users-search-row{gap:6px}
+}
+
+/* ---- Dark theme: diametrically opposite tones ---- */
+[data-theme="dark"] .admin-dashboard h1{color:#f9fafb}
+[data-theme="dark"] .admin-hint{color:#9ca3af}
+[data-theme="dark"] .admin-muted{color:#6b7280}
+[data-theme="dark"] .tag-assign-row{background:#1f2937;border-color:#374151}
+[data-theme="dark"] .tag-assign-search{background-color:#1f2937;border-color:#4b5563;color:#f9fafb}
+[data-theme="dark"] .tag-assign-name{color:#e5e7eb}
+[data-theme="dark"] .tag-assign-email{color:#9ca3af}
+[data-theme="dark"] .tag-assign-popover{background:#1f2937;border-color:#374151;box-shadow:0 12px 30px #00000080}
+[data-theme="dark"] .tag-assign-popover-hint{color:#9ca3af}
+[data-theme="dark"] .admin-tag-chip{background:#1e3a5f;color:#93c5fd}
+[data-theme="dark"] .stat-card{background:#1f2937;box-shadow:0 1px 3px #00000066}
+[data-theme="dark"] .stat-card--link{border-color:#374151;color:inherit}
+[data-theme="dark"] .stat-card--link:hover{border-color:#1e3a5f;box-shadow:0 2px 8px #00000066}
+[data-theme="dark"] .stat-value{color:#60a5fa}
+[data-theme="dark"] .stat-detail{color:#9ca3af}
+[data-theme="dark"] .stat-label{color:#9ca3af}
+[data-theme="dark"] .stat-sub{color:#6b7280}
+[data-theme="dark"] .admin-tabs{border-bottom-color:#374151}
+[data-theme="dark"] .admin-tabs button{color:#9ca3af}
+[data-theme="dark"] .admin-tabs button:hover{color:#f9fafb}
+[data-theme="dark"] .admin-tabs button.active{color:#60a5fa;border-bottom-color:#60a5fa}
+[data-theme="dark"] .admin-subtabs{border-bottom-color:#374151}
+[data-theme="dark"] .admin-subtabs button{color:#9ca3af}
+[data-theme="dark"] .admin-subtabs button:hover{color:#f9fafb}
+[data-theme="dark"] .admin-subtabs button.active{color:#60a5fa;border-bottom-color:#60a5fa}
+[data-theme="dark"] .users-sort{color:#9ca3af}
+[data-theme="dark"] .users-toggle{color:#9ca3af}
+[data-theme="dark"] .users-filter-btn{background:#1f2937;border-color:#4b5563}
+[data-theme="dark"] .users-filter-btn:hover{background:#374151}
+[data-theme="dark"] .users-filter-btn[aria-expanded=true]{border-color:#60a5fa;box-shadow:0 0 0 3px #60a5fa26}
+[data-theme="dark"] .users-filter-menu{background:#1f2937;border-color:#374151}
+[data-theme="dark"] .admin-section{background:#1f2937;box-shadow:0 1px 3px #00000066}
+[data-theme="dark"] .admin-event-link{color:#f9fafb}
+[data-theme="dark"] .admin-event-key{color:#6b7280}
+[data-theme="dark"] .admin-role-select{background-color:#1f2937;border-color:#4b5563;color:#f9fafb}
+[data-theme="dark"] .admin-self-note{color:#6b7280}
+[data-theme="dark"] .events-table th,[data-theme="dark"] .users-table th{border-bottom-color:#374151;color:#d1d5db}
+[data-theme="dark"] .events-table td,[data-theme="dark"] .users-table td{border-bottom-color:#374151}
+[data-theme="dark"] .events-table tr:hover,[data-theme="dark"] .users-table tr:hover{background:#374151}
+[data-theme="dark"] .badge-warning{background:#451a03;color:#fcd34d}
+[data-theme="dark"] .badge-admin{background:#1e3a5f;color:#93c5fd}
+[data-theme="dark"] .badge-user{background:#374151;color:#d1d5db}
+[data-theme="dark"] .admin-denied{color:#9ca3af}
+[data-theme="dark"] .admin-denied h2{color:#f87171}
+[data-theme="dark"] .badge-guest{background:#3b0764;color:#d8b4fe}
+[data-theme="dark"] .guest-alert{background:#2e1065;border-color:#581c87;border-left-color:#a855f7}
+[data-theme="dark"] .guest-alert-head{color:#d8b4fe}
+[data-theme="dark"] .guest-alert-list li{background:#1f2937;border-color:#3b0764}
+[data-theme="dark"] .guest-alert-name{color:#f9fafb}
+[data-theme="dark"] .guest-alert-phone{color:#9ca3af}
+[data-theme="dark"] .reset-requests h3{color:#f9fafb}
+[data-theme="dark"] .reset-request{background:#1f2937;border-color:#374151;border-left-color:#f59e0b}
+[data-theme="dark"] .reset-request-name{color:#f9fafb}
+[data-theme="dark"] .reset-request-phone{color:#9ca3af}
+[data-theme="dark"] .reset-request-time{color:#6b7280}
+[data-theme="dark"] .tag-picker{background:#1f2937;border-color:#4b5563}
+[data-theme="dark"] .ae-tag-warning{color:#fbbf24}
+[data-theme="dark"] .ae-hint.ae-tag-warning{background:#451a03;border-color:#92400e;border-left-color:#f59e0b;color:#fcd34d}
+[data-theme="dark"] .ae-hint.ae-tag-warning:before{background:#f59e0b;color:#451a03}
+[data-theme="dark"] .inline-menu-row td{background:#1f2937}
+[data-theme="dark"] .admin-empty-row{color:#9ca3af}
+@media (orientation: portrait){
+  [data-theme="dark"] .admin-tabs{background:#1f2937;border-top-color:#374151;box-shadow:0 -1px 3px #00000066}
+  [data-theme="dark"] .admin-tabs button.active{color:#93c5fd;background:#1e3a5f}
+}

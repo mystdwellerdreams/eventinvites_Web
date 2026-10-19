@@ -1,0 +1,177 @@
+.ep-container{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column}
+/* The title and the action bar travel together. On wide screens the
+   bar has no box of its own and the flex order keeps the original
+   layout — title, then the header meta, then the actions. On portrait
+   the whole bar sticks right under the app header. */
+.ep-sticky-bar{display:contents}
+.ep-preview-banner{order:0}
+.ep-titlerow{order:1;margin-bottom:16px}
+.ep-header{order:2}
+.ep-actions{order:3}
+.ep-confirm{order:4}
+.ep-grid{order:5;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+.ep-element{min-width:0}
+.ep-span-1{grid-column:span 1}
+.ep-span-2{grid-column:span 2}
+.ep-title{margin:0;font-size:2.25rem;line-height:1.2;overflow-wrap:anywhere}
+.ep-header{display:flex;flex-direction:column;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid rgba(127,127,127,.3)}
+.ep-header-meta{display:flex;flex-direction:column;gap:10px}
+.ep-header-chips{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.ep-header-chip{display:inline-flex;align-items:baseline;gap:8px;padding:8px 16px;border-radius:999px;background:#7f7f7f29;font-weight:600}
+.ep-header-chip-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;opacity:.7}
+.ep-header-summary{margin:0;max-width:70ch;opacity:.8;line-height:1.6}
+.ep-datetime{display:flex;flex-direction:column;gap:8px;padding:16px 20px;border-radius:10px;background:#7f7f7f1a}
+.ep-datetime-row{display:flex;justify-content:space-between;gap:16px;font-size:1rem}
+.ep-datetime-label{font-weight:600;opacity:.75}
+.ep-cover{width:100%;max-height:420px;object-fit:cover;border-radius:10px;display:block}
+/* The cover frame holds the image and the text laid over it. */
+.ep-cover-frame{position:relative;border-radius:10px;overflow:hidden;min-width:0}
+.ep-cover-frame .ep-cover,.ep-cover-frame .ep-carousel{border-radius:0}
+.ep-cover-text{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;padding:28px 32px;pointer-events:none}
+/* Without an image the text alone is the cover, so it flows normally. */
+.ep-cover-text:only-child{position:relative;inset:auto;min-height:180px}
+.ep-v-top{justify-content:flex-start}
+.ep-v-center{justify-content:center}
+.ep-v-bottom{justify-content:flex-end}
+.ep-cover-caption{margin:0;font-size:2rem;font-weight:700;line-height:1.2;overflow-wrap:anywhere;text-shadow:0 1px 12px #000000a6,0 0 2px #000000a6}
+.ep-cover-description{margin:0;font-size:1.05rem;line-height:1.6;white-space:pre-line;overflow-wrap:anywhere;text-shadow:0 1px 10px #000000a6,0 0 2px #000000a6}
+.ep-cover-text:only-child .ep-cover-caption,.ep-cover-text:only-child .ep-cover-description{text-shadow:none}
+.ep-align-left{text-align:left}
+.ep-align-center{text-align:center}
+.ep-align-right{text-align:right}
+.ep-block{padding:20px;border-radius:10px;background:#7f7f7f14;height:100%}
+.ep-block-title{margin:0 0 12px;font-size:1.05rem;text-transform:uppercase;letter-spacing:.04em;opacity:.8;padding-bottom:8px;border-bottom:1px solid rgba(127,127,127,.3)}
+.ep-description{margin:0;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere}
+.ep-host{display:flex;align-items:center;gap:12px;font-size:1.05rem;font-weight:500}
+.ep-host-avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.ep-host-initial{display:flex;align-items:center;justify-content:center;background:#3b82f6;color:#fff;font-weight:700}
+.ep-price{margin:0;font-size:1.5rem;font-weight:700}
+.ep-price-list{list-style:none;margin:0 0 1em;padding:0;display:flex;flex-direction:column;gap:6px}
+.ep-price-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:7px 12px;border-radius:8px;background:#7f7f7f1f;font-size:.92rem}
+.ep-price-label{opacity:.8}
+.ep-price-value{font-weight:600}
+.ep-lists{display:flex;flex-direction:column;gap:20px}
+.ep-list-header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}
+.ep-list-header h4{margin:0;font-size:1.05rem;display:flex;align-items:center;gap:8px}
+.ep-list-default{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:999px;background:#3b82f633}
+.ep-copy{margin:0;line-height:1.7;overflow-wrap:anywhere}
+.ep-list-count{font-size:.8rem;opacity:.7}
+.ep-participants{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ep-participant{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:8px;background:#7f7f7f1f;border-left:4px solid transparent;flex-wrap:wrap}
+.ep-participant.is-confirmed{background:#10b9812e;border-left-color:#10b981}
+.ep-participant-avatar{width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#3b82f6;color:#fff;font-weight:600;font-size:.9rem}
+.ep-participant-avatar img{width:100%;height:100%;object-fit:cover}
+.ep-participant-name{font-weight:500}
+.ep-confirmed-badge{font-size:.78rem;font-weight:700;color:#059669;white-space:nowrap}
+.ep-participant-admin{display:flex;align-items:center;gap:8px;margin-left:auto}
+.ep-empty-list{margin:0;font-style:italic;opacity:.6}
+/* Action bar below the header: Back, Edit, Share and
+   the Register list picker. */
+.ep-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:20px}
+.ep-actions .ep-back,.ep-actions .ep-edit-link{align-self:center}
+.ep-register-menu{position:relative;display:inline-block}
+.ep-register-button .caret{font-size:.7em;opacity:.7;margin-left:3px}
+.ep-register-dropdown{position:absolute;left:0;top:calc(100% + 6px);z-index:var(--z-dropdown);min-width:220px;padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 10px 25px #00000026;animation:contact-menu-in .12s ease-out}
+.ep-register-option{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:8px 10px;border-radius:6px;text-decoration:none;color:#1f2937;background:none;border:0;font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;transition:background .15s;text-align:left}
+.ep-register-option:hover{background:#f3f4f6}
+.ep-register-empty{margin:2px 4px 4px;padding:4px 6px;font-size:.8rem;color:#6b7280;font-style:italic}
+
+/* Registration confirmation block below the action bar. */
+.ep-confirm{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px;padding:14px 18px;border-radius:10px;background:#10b9812e;border:1px solid #10b98155}
+.ep-confirm-text{display:flex;align-items:center;gap:10px;min-width:0;font-weight:500;color:#065f46}
+.ep-confirm-check{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#10b981;color:#fff;font-size:.75rem;font-weight:700;flex-shrink:0}
+.ep-unregister{transition:background .2s,color .2s,border-color .2s,box-shadow .2s}
+.ep-unregister.armed{background:#ef4444;color:#fff;border-color:#ef4444;animation:ep-arm-pulse 1s ease-in-out infinite}
+@keyframes ep-arm-pulse{0%,100%{box-shadow:0 0 0 0 #ef444459}50%{box-shadow:0 0 0 7px #ef444400}}
+.ep-titlerow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ep-titlerow .ep-title{flex:1 1 260px;min-width:0}
+.ep-back{flex-shrink:0;align-self:center;gap:6px;color:inherit;border-color:currentColor;opacity:.75}
+.ep-back:hover{background:#7f7f7f2e;opacity:1}
+.ep-back:focus-visible{outline:2px solid currentColor;outline-offset:2px;opacity:1}
+.ep-back-arrow{font-size:1em;line-height:1}
+.ep-back-standalone{align-self:flex-start;margin-bottom:16px}
+.ep-preview-banner{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:16px;padding:12px 16px;border-radius:10px;background:#fffbeb;border:1px dashed #f59e0b;color:#92400e;font-size:.875rem}
+.ep-preview-banner strong{text-transform:uppercase;letter-spacing:.04em;font-size:.75rem}
+.ep-live-badge{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:#b91c1c;color:#fff;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.ep-live-dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:ep-live-blink 1.2s ease-in-out infinite}
+.ep-header-note{margin:12px 0 0;font-size:.875rem;font-style:italic;opacity:.7}
+.ep-edit-link,.ep-share-link{flex-shrink:0;align-self:center;text-decoration:none;color:inherit;border-color:currentColor;opacity:.8}
+.ep-edit-link:hover,.ep-share-link:hover{opacity:1;background:#7f7f7f2e}
+.ep-hosts{display:flex;flex-direction:column;gap:12px}
+.ep-host-names{margin:0 0 1em;line-height:1.6;font-size:1rem}
+.ep-price-items{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ep-price-items li{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:7px 12px;border-radius:8px;background:#7f7f7f1f;font-size:.92rem}
+.ep-public-tags{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.ep-public-tag{display:inline-block;padding:3px 11px;border-radius:999px;background:#7f7f7f29;font-size:.78rem;font-weight:600}
+.ep-organizer{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ep-organizer-text{display:flex;flex-direction:column;flex:1;min-width:0}
+.ep-organizer-name{font-weight:600}
+.ep-organizer-email{font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ep-rich{line-height:1.7;overflow-wrap:anywhere}
+.ep-rich p{margin:0 0 10px}
+.ep-rich p:last-child{margin-bottom:0}
+.ep-rich ul,.ep-rich ol{margin:0 0 10px;padding-left:22px}
+.ep-rich blockquote{margin:0 0 10px;padding-left:12px;border-left:3px solid rgba(127,127,127,.5);opacity:.9}
+.ep-rich a{color:inherit;text-decoration:underline}
+
+/* ---- Dark theme: diametrically opposite tones ---- */
+[data-theme="dark"] .ep-register-dropdown{background:#1f2937;border-color:#374151;box-shadow:0 10px 25px #00000080}
+[data-theme="dark"] .ep-register-option{color:#e5e7eb}
+[data-theme="dark"] .ep-register-option:hover{background:#374151}
+[data-theme="dark"] .ep-register-empty{color:#9ca3af}
+[data-theme="dark"] .ep-confirm{background:#064e3b;border-color:#065f46}
+[data-theme="dark"] .ep-confirm-text{color:#6ee7b7}
+[data-theme="dark"] .ep-preview-banner{background:#451a03;border-color:#92400e;color:#fcd34d}
+[data-theme="dark"] .ep-back:hover,[data-theme="dark"] .ep-edit-link:hover,[data-theme="dark"] .ep-share-link:hover{background:#7f7f7f2e}
+[data-theme="dark"] .ep-sticky-bar{background-color:#111827}
+[data-theme="dark"] .ep-sticky-bar .ep-actions{border-top-color:#374151}
+
+/* Mobile: shrink the page's elements so they
+   aren't bulky and fit within the screen. */
+@media (max-width: 768px), (orientation: portrait) {
+  .ep-container{padding:0 14px}
+  .ep-header{gap:12px;margin-bottom:16px;padding-bottom:14px}
+  .ep-title{font-size:1.5rem}
+  .ep-header-chips{gap:8px}
+  .ep-header-chip{padding:5px 10px;font-size:.85rem}
+  .ep-header-chip-label{font-size:.62rem}
+  .ep-header-summary{font-size:.9rem}
+  .ep-actions{gap:8px;margin-bottom:16px}
+  .ep-actions .btn{padding:6px 10px;font-size:.78rem}
+  .ep-confirm{padding:12px 14px;margin-bottom:16px}
+  .ep-confirm-text{font-size:.9rem}
+  .ep-confirm-check{width:20px;height:20px;font-size:.68rem}
+  .ep-block{padding:14px;border-radius:8px}
+  .ep-block-title{font-size:.9rem;margin-bottom:8px}
+  .ep-host{gap:8px;font-size:.95rem}
+  .ep-price{font-size:1.25rem}
+  .ep-price-items li{padding:6px 10px;font-size:.85rem}
+  .ep-list-header h4{font-size:.95rem}
+  .ep-participant{padding:8px 10px;gap:8px}
+  .ep-participant-avatar{width:30px;height:30px;font-size:.8rem}
+  .ep-participant-name{font-size:.9rem}
+  .ep-public-tag{padding:2px 8px;font-size:.72rem}
+  .ep-register-dropdown{min-width:180px}
+}
+
+/* Portrait: the title and the action bar stick under the
+   app header, with a separator above the actions, so they
+   stay visible while the rest of the page scrolls. */
+@media (orientation: portrait) {
+  .ep-sticky-bar{
+    display:flex;
+    flex-direction:column;
+    position:sticky;
+    top:64px;
+    z-index:50;
+    background-color:#f3f4f6;
+    padding:8px 0;
+  }
+  .ep-titlerow{margin-bottom:0}
+  .ep-sticky-bar .ep-actions{
+    border-top:1px solid rgba(127,127,127,.3);
+    padding-top:8px;
+    margin-top:4px;
+    margin-bottom:0;
+  }
+}

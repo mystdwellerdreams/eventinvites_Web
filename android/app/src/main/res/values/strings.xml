@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Event Invites</string>
+    <string name="title_activity_main">Event Invites</string>
+    <string name="package_name">club.kolymafia.eventinvites</string>
+    <string name="custom_url_scheme">club.kolymafia.eventinvites</string>
+</resources>

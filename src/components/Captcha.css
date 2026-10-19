@@ -1,0 +1,28 @@
+/* The security check: the Cloudflare widget, the app's own fallback, and
+   the overlay that puts either in front of the whole screen. */
+
+.captcha-slot{min-height:65px;display:flex;justify-content:center}
+
+.captcha-note{margin:0;font-size:.85rem;color:#6b7280;text-align:center}
+
+/* ---- The app's own fallback challenge ---- */
+.captcha-fallback{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
+.captcha-fallback-question{margin:0;font-size:1.05rem;font-weight:600;color:#1f2937}
+.captcha-fallback-input{width:120px;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:1rem;text-align:center;color:#111827;background:#fff}
+.captcha-fallback-input:focus{outline:2px solid #3b82f6;outline-offset:0;border-color:#3b82f6}
+.captcha-fallback-error{margin:0;font-size:.8rem;color:#dc2626}
+
+/* ---- The overlay ---- */
+.captcha-overlay{position:fixed;inset:0;z-index:calc(var(--z-overlay) + 1);display:flex;align-items:center;justify-content:center;padding:16px;background:#000000a6}
+.captcha-card{display:flex;flex-direction:column;align-items:center;gap:12px;width:min(360px,100%);padding:24px 20px;background:#fff;border-radius:16px;box-shadow:0 8px 30px #00000040;text-align:center}
+.captcha-card h2{margin:0;font-size:1.15rem;color:#1a1a1a}
+.captcha-card p{margin:0;font-size:.875rem;color:#6b7280}
+
+/* ---- Dark theme ---- */
+[data-theme="dark"] .captcha-card{background:#1f2937}
+[data-theme="dark"] .captcha-card h2{color:#f9fafb}
+[data-theme="dark"] .captcha-card p{color:#9ca3af}
+[data-theme="dark"] .captcha-note{color:#9ca3af}
+[data-theme="dark"] .captcha-fallback-question{color:#f3f4f6}
+[data-theme="dark"] .captcha-fallback-input{background:#374151;border-color:#4b5563;color:#f3f4f6}
+[data-theme="dark"] .captcha-fallback-error{color:#f87171}

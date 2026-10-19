@@ -1,0 +1,18 @@
+.profile-page{padding:24px 0;max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.profile-page>h1{margin:0;color:#1a1a1a}
+.profile-card{background:#fff;border-radius:12px;padding:32px;box-shadow:0 1px 3px #00000014}
+.profile-hint{font-size:.8rem;color:#6b7280;margin:0}
+.profile-avatar-section{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid #e5e7eb}
+.profile-avatar{width:120px;height:120px;border-radius:50%;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-size:3rem;font-weight:600;overflow:hidden}
+.profile-avatar img{width:100%;height:100%;object-fit:cover}
+.profile-avatar-buttons{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.profile-form{display:flex;flex-direction:column;gap:16px}
+.profile-form .form-group{display:flex;flex-direction:column;gap:4px}
+.profile-loading{text-align:center;padding:60px 20px;color:#6b7280}
+
+/* ---- Dark theme: diametrically opposite tones ---- */
+[data-theme="dark"] .profile-page>h1{color:#f9fafb}
+[data-theme="dark"] .profile-card{background:#1f2937;box-shadow:0 1px 3px #00000066}
+[data-theme="dark"] .profile-hint{color:#9ca3af}
+[data-theme="dark"] .profile-avatar-section{border-bottom-color:#374151}
+[data-theme="dark"] .profile-loading{color:#9ca3af}

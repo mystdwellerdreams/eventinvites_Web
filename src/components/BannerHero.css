@@ -1,0 +1,95 @@
+/* The hero is a row of banner areas: left, main, right. The
+   column template is computed from which slots have ads. */
+.banner-hero{display:grid;gap:16px;margin-bottom:40px}
+.banner-hero-slot{min-width:0}
+
+/* Every ad fills its banner area. */
+.banner-ad{min-height:180px;border-radius:12px;display:flex;flex-direction:column;justify-content:center;padding:20px;overflow:hidden;position:relative}
+.banner-ad--cover{background-size:cover;background-position:center;background-repeat:no-repeat}
+.banner-ad--align-left{text-align:left;align-items:flex-start}
+.banner-ad--align-center{text-align:center;align-items:center}
+.banner-ad--align-right{text-align:right;align-items:flex-end}
+/* The banner is a column, so alignment controls vertical alignment is the
+   main axis: where the text block sits between the top and bottom. */
+.banner-ad--v-top{justify-content:flex-start}
+.banner-ad--v-center{justify-content:center}
+.banner-ad--v-bottom{justify-content:flex-end}
+.banner-ad-textblock{display:flex;flex-direction:column;gap:10px;max-width:600px}
+.banner-ad-text{margin:0;font-size:1.25rem;font-weight:600;line-height:1.4;max-width:600px}
+.banner-ad-description{margin:0;font-size:1rem;font-weight:400;line-height:1.55;white-space:pre-line}
+.banner-ad-description--align-left{text-align:left}
+.banner-ad-description--align-center{text-align:center}
+.banner-ad-description--align-right{text-align:right}
+
+/* Main banner: ads rotate; dots sit over the bottom edge. */
+.main-banner{position:relative}
+.main-banner .banner-ad{min-height:220px}
+.main-banner-dots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px}
+.main-banner-dot{width:8px;height:8px;padding:0;border:none;border-radius:50%;background:rgba(255,255,255,.55);cursor:pointer;transition:background .2s,transform .2s}
+.main-banner-dot.is-active{background:#fff;transform:scale(1.25)}
+
+/* Counter: a bar or circle with a caption; clicking reveals details. */
+.counter-body{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;background:none;border:none;padding:0;cursor:pointer;color:inherit;font:inherit}
+.counter-label{margin:0;font-size:.85rem;font-weight:600;opacity:.9}
+.counter-bar{position:relative;width:100%;max-width:420px;height:22px;background:rgba(128,128,128,.25);border-radius:999px;overflow:hidden}
+.counter-bar-fill{height:100%;background:linear-gradient(90deg,#34d399,#10b981);border-radius:999px;transition:width .4s}
+.counter-bar-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.counter-circle{width:110px;height:110px}
+.counter-circle-bg{fill:none;stroke:rgba(128,128,128,.25);stroke-width:8}
+.counter-circle-fill{fill:none;stroke:#10b981;stroke-width:8;stroke-linecap:round;transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset .4s}
+.counter-circle-label{font-size:16px;font-weight:700;fill:#fff}
+.counter-circle-label--small{font-size:11px}
+.counter-caption{margin:0;font-size:1rem;font-weight:600}
+.counter-details{margin-top:12px;padding:10px 12px;background:rgba(128,128,128,.15);border-radius:8px;font-size:.9rem;line-height:1.5;white-space:pre-wrap}
+/* Tap hint pinned to the bottom of the banner. */
+.counter-details-hint{margin:auto 0 0;font-size:.75rem;opacity:.75}
+/* An @handle in the details: tappable, copies on tap. */
+.counter-mention{font:inherit;color:inherit;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:0 8px;margin:0 1px;cursor:pointer;transition:background .2s}
+.counter-mention:hover{background:rgba(255,255,255,.35)}
+.counter-copied{display:inline-block;margin-left:8px;font-size:.75rem;font-weight:700;color:#fff;background:rgba(16,185,129,.9);border-radius:999px;padding:1px 8px;vertical-align:middle}
+
+/* Poll: options before voting, results with counts afterwards. */
+.poll-question{margin:0 0 10px;font-size:1.05rem;font-weight:600}
+.poll-options{display:flex;flex-direction:column;gap:8px;width:100%}
+.poll-option{padding:10px 14px;border-radius:8px;border:1px solid rgba(128,128,128,.4);background:rgba(128,128,128,.12);color:inherit;font:inherit;font-size:.95rem;text-align:left;cursor:pointer;transition:background .2s}
+.poll-option:hover:not(:disabled){background:rgba(128,128,128,.25)}
+.poll-option:disabled{opacity:.6;cursor:default}
+.poll-result{display:flex;justify-content:space-between;gap:10px;width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(128,128,128,.4);background:rgba(128,128,128,.12);overflow:hidden;font:inherit;font-size:.9rem;color:inherit;text-align:left;cursor:default;position:relative}
+.poll-result.is-clickable{cursor:pointer}
+.poll-result.is-clickable:hover:not(:disabled){background:rgba(128,128,128,.25)}
+.poll-result:disabled{opacity:.85}
+.poll-result-fill{position:absolute;top:0;left:0;bottom:0;background:rgba(59,130,246,.35);transition:width .4s}
+.poll-result.is-mine{border-color:#3b82f6}
+.poll-result-text{position:relative;z-index:1}
+.poll-result-count{position:relative;z-index:1;font-variant-numeric:tabular-nums;opacity:.85}
+.poll-cooldown-hint{margin:10px 0 0;font-size:.8rem;opacity:.75}
+
+/* Contacts: buttons at the top or bottom of the banner. */
+.banner-ad--contacts{justify-content:space-between}
+.contacts-top{justify-content:flex-start}
+.contacts-bottom{justify-content:flex-end}
+.contacts-spacer{flex:1;min-height:24px}
+.contacts-row{display:flex;flex-wrap:wrap;gap:8px;width:100%}
+.contacts-align-left{justify-content:flex-start}
+.contacts-align-center{justify-content:center}
+.contacts-align-right{justify-content:flex-end}
+.contacts-btn{padding:8px 16px;border-radius:999px;background:rgba(255,255,255,.18);color:#fff;font-size:.9rem;font-weight:600;text-decoration:none;transition:background .2s}
+.contacts-btn:hover{background:rgba(255,255,255,.32)}
+.contacts-btn--outline{background:transparent}
+.contacts-btn--outline:hover{background:rgba(255,255,255,.12)}
+
+/* Announcement: styled text filling the entire banner. */
+.banner-ad--announcement{justify-content:center}
+.banner-ad--announcement .banner-ad-text{font-size:1.35rem}
+.announcement-quote{margin:0;padding:6px 16px;border-left:4px solid currentColor;opacity:.92;font-style:italic;text-align:left;max-width:100%}
+.announcement-table{border-collapse:collapse;margin:4px 0;max-width:100%;font-size:.95rem}
+.announcement-table th,.announcement-table td{border:1px solid currentColor;padding:4px 10px;text-align:left;opacity:.92}
+.announcement-table th{font-weight:700}
+
+/* Narrow screens: the banners stack — left, main, right. */
+@media (max-width: 768px){
+  .banner-hero{display:flex;flex-direction:column}
+  .banner-ad{min-height:150px}
+  .main-banner .banner-ad{min-height:170px}
+  .banner-ad--announcement .banner-ad-text{font-size:1.15rem}
+}

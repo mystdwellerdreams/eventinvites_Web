@@ -1,0 +1,114 @@
+/* Discussion at the bottom of the event page. The panel carries its own
+   translucent surface, because the page background is set per event. */
+.ec-section{margin:32px auto 0;max-width:1080px;padding:20px;background:#ffffffe0;border:1px solid #00000014;border-radius:14px;backdrop-filter:blur(6px)}
+.ec-header{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.ec-title{margin:0;font-size:1.15rem;color:#111827}
+.ec-count{font-size:.8rem;color:#6b7280}
+.ec-composer{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.ec-textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:64px;padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;background:#fff;color:#111827;font:inherit;font-size:.9rem}
+.ec-textarea:focus{outline:2px solid #3b82f6;outline-offset:1px;border-color:#3b82f6}
+.ec-composer-footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ec-hint{font-size:.75rem;color:#9ca3af}
+.ec-form-error{margin:0;font-size:.8rem;color:#b91c1c}
+.ec-chip{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:8px;font-size:.78rem;background:#f3f4f6;border-left:3px solid #3b82f6}
+.ec-chip.is-quote{border-left-color:#8b5cf6}
+.ec-chip-label{font-weight:600;color:#374151;white-space:nowrap}
+.ec-chip-text{color:#6b7280;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ec-chip-remove{margin-left:auto;border:0;background:none;cursor:pointer;font-size:1rem;line-height:1;color:#6b7280;padding:0 2px}
+.ec-chip-remove:hover{color:#111827}
+.ec-notice{padding:12px 14px;border-radius:10px;background:#f3f4f6;color:#374151;font-size:.85rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 16px}
+.ec-notice.is-warning{background:#fef3c7;color:#92400e}
+.ec-notice p{margin:0}
+.ec-loading{display:flex;align-items:center;gap:10px;color:#6b7280;font-size:.85rem}
+.ec-empty{margin:0;color:#6b7280;font-size:.85rem;font-style:italic}
+.ec-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.ec-thread{list-style:none;margin:6px 0 0;padding:0}
+.ec-thread-item{display:block}
+.ec-comment{padding:10px 12px;border-radius:10px;background:#ffffffd9;border:1px solid #0000000f}
+.ec-comment.is-pinned{background:#fffbeb;border-color:#f59e0b66}
+.ec-comment.is-banned{opacity:.75}
+.ec-comment.is-banned .ec-text{text-decoration:line-through;color:#9ca3af}
+.ec-comment.is-deleted{background:#f3f4f680}
+/* The comment a deep link points at, lit up for a few seconds. */
+.ec-comment.is-highlighted{outline:2px solid #3b82f6;outline-offset:2px;animation:ec-flash 2.5s ease-out}
+@keyframes ec-flash{0%{background:#dbeafe}100%{background:transparent}}
+.ec-comment-main{display:flex;gap:10px}
+.ec-avatar{flex:0 0 auto;line-height:0;border-radius:50%;padding:2px}
+.ec-avatar.ring-host{box-shadow:0 0 0 2px #2563eb}
+.ec-avatar.ring-organizer{box-shadow:0 0 0 2px #059669}
+.ec-comment-body{flex:1;min-width:0}
+.ec-comment-head{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px}
+.ec-name{font-weight:700;font-size:.85rem;color:#111827}
+.ec-name.is-host{color:#1d4ed8;border-bottom:2px solid #2563eb;padding-bottom:1px}
+.ec-name.is-organizer{color:#047857;border-bottom:2px solid #059669;padding-bottom:1px}
+.ec-badge{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border-radius:999px}
+.ec-badge.is-admin{background:#fee2e2;color:#b91c1c}
+.ec-badge.is-host{background:#dbeafe;color:#1d4ed8}
+.ec-badge.is-organizer{background:#d1fae5;color:#047857}
+.ec-pin-flag{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#b45309}
+.ec-banned-flag{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#6b7280}
+.ec-time{font-size:.7rem;color:#9ca3af;margin-left:auto}
+.ec-quote{display:flex;flex-direction:column;gap:2px;margin:6px 0;padding:6px 10px;border-left:3px solid #8b5cf6;background:#f5f3ffb3;border-radius:0 8px 8px 0;font-size:.8rem}
+.ec-quote.is-page{border-left-color:#3b82f6;background:#eff6ffb3}
+.ec-quote-author{font-weight:600;color:#5b21b6}
+.ec-quote-text{color:#6b7280;white-space:pre-wrap}
+.ec-text{margin:2px 0 4px;font-size:.9rem;color:#1f2937;white-space:pre-wrap;overflow-wrap:anywhere}
+.ec-removed{margin:2px 0 4px;font-size:.85rem;color:#9ca3af;font-style:italic}
+.ec-tools{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}
+.ec-tool{border:0;background:none;cursor:pointer;font-size:.72rem;font-weight:600;color:#6b7280;padding:2px 6px;border-radius:6px}
+.ec-tool:hover{background:#e5e7eb;color:#111827}
+.ec-blocks-panel{margin-bottom:16px}
+.ec-blocks-toggle{border:0;background:none;cursor:pointer;font-size:.75rem;font-weight:600;color:#6b7280;padding:2px 0}
+.ec-blocks-toggle:hover{color:#111827}
+.ec-blocks-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.ec-blocks-empty{margin:0;font-size:.78rem;color:#9ca3af}
+.ec-block-row{display:flex;align-items:center;gap:8px;font-size:.78rem;color:#374151}
+.ec-block-name{font-weight:600}
+.ec-block-reason{color:#9ca3af;font-style:italic}
+.ec-depth-1{padding-left:18px;border-left:2px solid #e5e7eb;margin-left:18px}
+.ec-depth-2{padding-left:18px;border-left:2px solid #e5e7eb;margin-left:18px}
+.ec-depth-3{padding-left:18px;border-left:2px solid #e5e7eb;margin-left:18px}
+.ep-element{position:relative}
+.ep-quote-btn{position:absolute;top:8px;right:8px;z-index:2;width:26px;height:26px;border:0;border-radius:8px;background:#ffffffd9;color:#6b7280;cursor:pointer;font-size:.8rem;line-height:1;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;box-shadow:0 1px 3px #0000001a}
+.ep-element:hover .ep-quote-btn,.ep-quote-btn:focus-visible{opacity:1}
+.ep-quote-btn:hover{background:#fff;color:#111827}
+
+/* ---- Dark theme ---- */
+[data-theme="dark"] .ec-section{background:#111827e6;border-color:#ffffff1f}
+[data-theme="dark"] .ec-title{color:#f9fafb}
+[data-theme="dark"] .ec-count{color:#9ca3af}
+[data-theme="dark"] .ec-textarea{background:#1f2937;border-color:#4b5563;color:#f9fafb}
+[data-theme="dark"] .ec-chip{background:#1f2937;color:#d1d5db}
+[data-theme="dark"] .ec-chip-label{color:#e5e7eb}
+[data-theme="dark"] .ec-chip-text{color:#9ca3af}
+[data-theme="dark"] .ec-chip-remove{color:#9ca3af}
+[data-theme="dark"] .ec-chip-remove:hover{color:#f9fafb}
+[data-theme="dark"] .ec-notice{background:#1f2937;color:#d1d5db}
+[data-theme="dark"] .ec-notice.is-warning{background:#78350f;color:#fde68a}
+[data-theme="dark"] .ec-comment{background:#1f2937d9;border-color:#ffffff14}
+[data-theme="dark"] .ec-comment.is-pinned{background:#78350f80;border-color:#f59e0b66}
+[data-theme="dark"] .ec-comment.is-deleted{background:#11182780}
+[data-theme="dark"] .ec-comment.is-highlighted{outline-color:#60a5fa}
+@keyframes ec-flash-dark{0%{background:#1e3a8a}100%{background:transparent}}
+[data-theme="dark"] .ec-comment.is-highlighted{animation:ec-flash-dark 2.5s ease-out}
+[data-theme="dark"] .ec-name{color:#f9fafb}
+[data-theme="dark"] .ec-text{color:#e5e7eb}
+[data-theme="dark"] .ec-removed{color:#9ca3af}
+[data-theme="dark"] .ec-quote{background:#4c1d95b3}
+[data-theme="dark"] .ec-quote.is-page{background:#1e3a8ab3}
+[data-theme="dark"] .ec-quote-author{color:#ddd6fe}
+[data-theme="dark"] .ec-quote-text{color:#d1d5db}
+[data-theme="dark"] .ec-tool{color:#9ca3af}
+[data-theme="dark"] .ec-tool:hover{background:#374151;color:#f9fafb}
+[data-theme="dark"] .ec-blocks-toggle{color:#9ca3af}
+[data-theme="dark"] .ec-blocks-toggle:hover{color:#f9fafb}
+[data-theme="dark"] .ec-block-row{color:#d1d5db}
+[data-theme="dark"] .ec-empty,[data-theme="dark"] .ec-loading,[data-theme="dark"] .ec-blocks-empty{color:#9ca3af}
+[data-theme="dark"] .ec-depth-1,[data-theme="dark"] .ec-depth-2,[data-theme="dark"] .ec-depth-3{border-left-color:#374151}
+[data-theme="dark"] .ep-quote-btn{background:#1f2937e6;color:#9ca3af;box-shadow:0 1px 3px #00000066}
+[data-theme="dark"] .ep-quote-btn:hover{background:#1f2937;color:#f9fafb}
+
+@media (max-width:640px){
+  .ec-section{padding:14px;margin-top:20px}
+  .ec-time{margin-left:0;width:100%}
+}

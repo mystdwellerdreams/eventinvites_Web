@@ -1,0 +1,160 @@
+/* The Banners admin tab: one card per slot, an ad list
+   inside it, and the ad editor form below. */
+.banners-editor .banner-slot-card{border:1px solid #e0e0e0;border-radius:10px;padding:16px;margin-bottom:16px}
+.banner-slot-head{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:4px}
+.banner-slot-head h3{margin:0;font-size:1.05rem;color:#1a1a1a}
+.banner-slot-toggle{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;color:#374151;cursor:pointer}
+.banner-slot-toggle input{accent-color:#3b82f6}
+.banner-interval{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;color:#374151}
+.banner-interval input{width:64px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px}
+
+.banner-ad-list{list-style:none;margin:10px 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.banner-ad-row{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;flex-wrap:wrap}
+.banner-ad-type{flex:none;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:#3b82f6;background:#eff6ff;border-radius:4px;padding:2px 6px}
+.banner-ad-summary{flex:1;min-width:120px;font-size:.85rem;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.banner-ad-off{flex:none;font-size:.75rem;color:#9ca3af;font-style:italic}
+.banner-ad-controls{display:flex;gap:4px;flex:none}
+.banner-ad-empty{padding:10px;font-size:.85rem;color:#9ca3af;font-style:italic}
+
+.banner-ad-form{border:1px solid #e0e0e0;border-radius:10px;padding:16px;margin-top:8px;background:#fff}
+.banner-ad-form h3{margin:0 0 12px;font-size:1rem;color:#1a1a1a}
+.banner-active-row{margin-top:12px}
+.banner-ad-form .ae-actions{display:flex;gap:8px;margin-top:16px}
+
+/* Image field: URL input, upload button and thumbnail,
+   mirroring the event settings' image section. */
+.banner-image-field{display:flex;flex-direction:column;gap:8px}
+.banner-image-field .cover-images-fields{display:flex;gap:8px;align-items:center}
+.banner-image-field .cover-images-fields input[type="text"]{flex:1}
+.banner-image-field .cover-images-thumb{width:120px}
+.banner-image-field .cover-images-thumb img{width:120px;height:auto;border-radius:8px;display:block}
+.banner-image-field .cover-images-thumb-empty{display:flex;align-items:center;justify-content:center;width:120px;height:72px;background:#f3f4f6;border:1px dashed #d1d5db;border-radius:8px;color:#9ca3af;font-size:.75rem}
+
+/* Poll option and contact rows inside the editor. */
+.banner-poll-options{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.banner-poll-option{display:flex;flex-direction:column;gap:4px}
+.banner-poll-option-row{display:flex;gap:6px;align-items:center}
+.banner-poll-option-row input{flex:1}
+.banner-poll-votes{flex:none;min-width:32px;text-align:center;font-size:.8rem;font-variant-numeric:tabular-nums;color:#374151;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;padding:4px 6px}
+.banner-poll-voters{display:flex;flex-wrap:wrap;gap:4px;padding-left:4px}
+.banner-poll-voter{font-size:.75rem;color:#1e40af;background:#eff6ff;border:1px solid #dbeafe;border-radius:999px;padding:1px 8px}
+.banner-contact-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.banner-contact-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.banner-contact-row select{flex:none;width:120px}
+.banner-contact-row input{flex:1;min-width:120px}
+.banner-contact-row .btn{flex:none}
+
+/* Counter adjustment: steppers around the value input. */
+.banner-counter-adjust{display:flex;gap:4px;align-items:center}
+.banner-counter-adjust input{flex:1;min-width:0}
+
+/* Template library: save the current form, load a saved one. */
+.banner-template-library{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px}
+.banner-template-save{display:flex;gap:6px}
+.banner-template-save input{flex:1}
+.banner-template-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.banner-template-row{display:flex;gap:6px;align-items:center}
+.banner-template-row .btn:first-child{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.banner-template-row .btn:last-child{flex:none}
+
+/* The announcement text area, styled as the rich text
+   editor's surface; the .rte container carries the border
+   and the focus ring. */
+textarea.rte-surface{border:none;resize:vertical;width:100%}
+textarea.rte-surface:focus{outline:none;border-color:transparent;box-shadow:none}
+
+/* Shared form controls used by the ad form. The same rules
+   live in AdminEventPage.css, which is not loaded on the
+   dashboard route where this editor renders. */
+.tag-visibility-modes{display:flex;flex-direction:column;gap:8px}
+.tag-mode{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;margin:0}
+.tag-mode.is-active{background:#eff6ff;border-color:#93c5fd}
+.tag-mode input{width:auto;margin:3px 0 0;cursor:pointer;flex-shrink:0}
+.tag-mode-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tag-mode-text strong{font-size:.9rem;color:#1f2937;line-height:1.35}
+.tag-mode-text span{font-size:.8rem;color:#6b7280;font-weight:400;line-height:1.4}
+.ae-duration-label{display:block;font-size:.85rem;font-weight:500;color:#374151;margin-bottom:4px}
+.ae-hint{display:flex;align-items:flex-start;gap:8px;margin:8px 0 0;padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-left:3px solid #94a3b8;border-radius:6px;font-size:.82rem;line-height:1.5;color:#64748b}
+.ae-hint:before{content:"i";flex-shrink:0;width:16px;height:16px;margin-top:1px;border-radius:50%;background:#94a3b8;color:#fff;font-size:.7rem;font-weight:700;font-style:italic;line-height:16px;text-align:center}
+.ae-hint:empty{display:none}
+.ae-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.ae-row .form-group{margin-bottom:16px}
+.ae-actions{display:flex;justify-content:flex-end;gap:12px}
+
+/* ---- Dark theme: diametrically opposite tones ---- */
+[data-theme="dark"] .banners-editor .banner-slot-card{border-color:#374151}
+[data-theme="dark"] .banner-slot-head h3{color:#f9fafb}
+[data-theme="dark"] .banner-slot-toggle,[data-theme="dark"] .banner-interval{color:#d1d5db}
+[data-theme="dark"] .banner-interval input{background-color:#1f2937;border-color:#4b5563;color:#f9fafb}
+[data-theme="dark"] .banner-ad-row{background:#1f2937;border-color:#374151}
+[data-theme="dark"] .banner-ad-type{color:#60a5fa;background:#1e3a5f}
+[data-theme="dark"] .banner-ad-summary{color:#d1d5db}
+[data-theme="dark"] .banner-ad-off{color:#6b7280}
+[data-theme="dark"] .banner-ad-empty{color:#6b7280}
+[data-theme="dark"] .banner-ad-form{background:#1f2937;border-color:#374151}
+[data-theme="dark"] .banner-ad-form h3{color:#f9fafb}
+[data-theme="dark"] .banner-image-field .cover-images-thumb-empty{background:#374151;border-color:#4b5563;color:#6b7280}
+[data-theme="dark"] .banner-poll-votes{color:#d1d5db;background:#374151;border-color:#4b5563}
+[data-theme="dark"] .banner-poll-voter{color:#93c5fd;background:#1e3a5f;border-color:#1e3a5f}
+[data-theme="dark"] .banner-template-library{background:#1f2937;border-color:#374151}
+[data-theme="dark"] .tag-mode{border-color:#374151}
+[data-theme="dark"] .tag-mode.is-active{background:#1e3a5f;border-color:#1e3a5f}
+[data-theme="dark"] .tag-mode-text strong{color:#f9fafb}
+[data-theme="dark"] .tag-mode-text span{color:#9ca3af}
+[data-theme="dark"] .ae-duration-label{color:#d1d5db}
+[data-theme="dark"] .ae-hint{background:#1f2937;border-color:#374151;color:#9ca3af}
+
+/* ---- Banners tab: slot tabs, ad preview grid, controls ---- */
+
+/* Tab bar switching between the LEFT / MAIN / RIGHT banner slots. */
+.banner-tabs{display:flex;gap:4px;padding-bottom:0;margin-bottom:12px;border-bottom:2px solid #e0e0e0}
+.banner-tab{padding:10px 16px;background:none;border:none;cursor:pointer;font-size:.85rem;font-weight:500;color:#666;border-bottom:3px solid transparent;transition:color .2s,border-color .2s}
+.banner-tab:hover{color:#374151}
+.banner-tab[aria-selected="true"], .banner-tab.is-active{color:#3b82f6;border-bottom-color:#3b82f6}
+.banner-tab-count{display:inline-block;margin-left:8px;font-size:.75rem;font-weight:600;color:#9ca3af;background:#f3f4f6;border:1px solid #e0e0e0;border-radius:999px;padding:0 8px}
+
+/* Ad preview: a card per ad that renders the ad with the same styles it gets
+   on the home page — the tag beneath is the only admin addition, and it is
+   always kept. The card is a role=button div because a <button> cannot wrap
+   the ad's own interactive controls (counter toggle, poll options, copy
+   handles). */
+.banner-preview{margin-top:12px}
+.banner-preview-empty{padding:28px;font-size:.85rem;color:#9ca3af;font-style:italic;text-align:center;background:#f9fafb;border:1px dashed #e5e7eb;border-radius:8px}
+.banner-preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.banner-preview-grid.is-selectable{grid-template-columns:1fr}
+.banner-preview-item{background:#fff;border:1px solid #e0e0e0;border-radius:12px;cursor:pointer;transition:border-color .2s}
+.banner-preview-item:hover{border-color:#cbd5e1}
+.banner-preview-item:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
+.banner-preview-item.is-selected{border-color:#3b82f6;box-shadow:0 0 0 3px #3b82f61f}
+.banner-preview-surface{display:block;width:100%}
+.banner-preview-tag{display:block;padding:8px 10px;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:#3b82f6;background:#eff6ff;border-top:1px solid #e0e0e0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Reordering helpers and the add/delete actions under the preview. */
+.banner-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:16px}
+.banner-reorder{display:inline-flex;gap:4px}
+
+/* Slot-level toggles (enabled, log changes) and the rotation interval. */
+.banner-toggles{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:16px}
+
+/* Dark theme for the banners tab. */
+[data-theme="dark"] .banner-tabs{border-bottom-color:#374151}
+[data-theme="dark"] .banner-tab{color:#9ca3af}
+[data-theme="dark"] .banner-tab:hover{color:#d1d5db}
+[data-theme="dark"] .banner-tab[aria-selected="true"], [data-theme="dark"] .banner-tab.is-active{color:#60a5fa;border-bottom-color:#60a5fa}
+[data-theme="dark"] .banner-tab-count{color:#9ca3af;background:#374151;border-color:#4b5563}
+[data-theme="dark"] .banner-preview-empty{background:#1f2937;border-color:#4b5563;color:#6b7280}
+[data-theme="dark"] .banner-preview-item{background:#1f2937;border-color:#374151}
+[data-theme="dark"] .banner-preview-item:hover{border-color:#4b5563}
+[data-theme="dark"] .banner-preview-item.is-selected{border-color:#60a5fa;box-shadow:0 0 0 3px #60a5fa26}
+[data-theme="dark"] .banner-preview-tag{background:#1e3a5f;border-top-color:#374151;color:#93c5fd}
+
+/* Template library. */
+.banner-library-row{display:flex;flex-direction:column;gap:16px}
+
+/* Pinned save / cancel actions for the ad being edited. */
+.banner-actions-pinned{position:sticky;bottom:0;z-index:20;display:flex;gap:12px;justify-content:flex-end;align-items:center;padding:14px 0 0;background:#f8fafcf2;backdrop-filter:blur(6px);border-top:1px solid #e5e7eb}
+
+/* Dark theme. */
+[data-theme="dark"] .banner-actions-pinned{background:#1f2937f2;border-top-color:#374151}
+
+

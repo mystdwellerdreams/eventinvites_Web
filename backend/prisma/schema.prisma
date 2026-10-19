@@ -1,0 +1,596 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+/// PostgreSQL so the database survives redeploys. SQLite was used during local
+/// development, where a file is convenient; serverless filesystems are ephemeral.
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  /// Users categorised with this tag.
+  users     User[]   @relation("UserTags")
+  /// Events whose visibility is configured in terms of this tag.
+  events    Event[]  @relation("EventVisibleTags")
+  /// Events that surface this tag to the public.
+  publicEvents Event[] @relation("EventPublicTags")
+}
+
+model User {
+  id                     String         @id @default(uuid())
+  /// Generated identifier used to refer to this user externally. It is never
+  /// shown in the web interface.
+  key                    String         @unique @default(uuid())
+  /// Optional: accounts are created from a name and a phone number.
+  email                  String?        @unique
+  /// Canonical phone number, the primary contact identifier.
+  phone                  String?
+  /// Digits-only form of `phone`, used for uniqueness and login lookups.
+  phoneKey               String?        @unique
+  passwordHash           String
+  name                   String
+  avatar                 String?
+  role                   String         @default("USER")
+  socialLinks            String?
+  /// Administrator-only categorisation. Never exposed to regular users.
+  tags                   Tag[]          @relation("UserTags")
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  registrations          Registration[] @relation("UserRegistrations")
+  confirmedRegistrations Registration[] @relation("RegistrationConfirmer")
+  hostedEvents           Event[]        @relation("EventHost")
+  hostedEventRoles       Event[]        @relation("EventHosts")
+  organizedEvents        Event[]        @relation("EventOrganizer")
+  createdEvents          Event[]        @relation("EventCreator")
+  refreshTokens          RefreshToken[]
+  invitesSent           Invite[]         @relation("InviteCreator")
+  passwordResets        PasswordReset[]
+  comments              EventComment[]   @relation("CommentAuthor")
+  commentBlocks         EventCommentBlock[] @relation("CommentBlockedUser")
+  issuedCommentBlocks   EventCommentBlock[] @relation("CommentBlockCreator")
+  activityEntries       ActivityLog[]    @relation("ActivityActor")
+  notifications         Notification[]   @relation("NotificationUser")
+  chats                 Chat[]           @relation("ChatUser")
+  adminChats            Chat[]           @relation("ChatAdmin")
+  chatMessages          ChatMessage[]    @relation("ChatMessageAuthor")
+  chatReads             ChatRead[]       @relation("ChatReadUser")
+  eventTemplates        EventTemplate[]  @relation("TemplateAuthor")
+  deviceTokens          DeviceToken[]    @relation("DeviceTokens")
+}
+
+/// One app installation that receives push notifications for its user.
+///
+/// The FCM registration token is unique: a device belongs to one account at a
+/// time, so signing in as somebody else re-points the token rather than adding
+/// a second row. A row is removed when the user signs out, when FCM reports the
+/// token as unregistered, or when the account is deleted.
+model DeviceToken {
+  id         String   @id @default(uuid())
+  userId     String
+  /// The FCM registration token.
+  token      String   @unique
+  /// android, ios or web.
+  platform   String   @default("android")
+  appVersion String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  /// Refreshed whenever the app registers, so stale rows can be pruned.
+  lastSeenAt DateTime @default(now())
+
+  user User @relation("DeviceTokens", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// A shareable sign-up link. Registering through one grants a full USER role
+/// instead of leaving the account as a guest awaiting approval.
+model Invite {
+  id          String    @id @default(uuid())
+  token       String    @unique
+  createdById String
+  note        String?
+  /// 0 means unlimited uses.
+  maxUses     Int       @default(0)
+  uses        Int       @default(0)
+  expiresAt   DateTime?
+  revoked     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  createdBy   User      @relation("InviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([revoked])
+}
+
+model Event {
+  id               String            @id @default(uuid())
+  key              String            @unique @default(uuid())
+  title            String
+  shortDescription String
+  description      String?
+  dateTime         DateTime
+  /// How long the event runs for, in minutes. Null means it is a point in
+  /// time rather than a span, so it is never "in progress".
+  durationMinutes  Int?
+  /// DURATION = `endsAt` is derived from `durationMinutes`; FIXED = the
+  /// administrator typed an end time and it is stored verbatim.
+  endTimeMode      String            @default("DURATION")
+  /// `dateTime` + `durationMinutes`, maintained on every write so that
+  /// "happening now" and policy checks stay a single indexed comparison.
+  endsAt           DateTime?
+  /// Superseded by `afterStartPolicy`; retained for existing rows.
+  unpublishAfterEnd Boolean           @default(false)
+  /// UNPUBLISH_AT_START = drops off the home page once it starts,
+  /// KEEP_PUBLISHED_LOCKED = stays listed, registration closes,
+  /// OPEN_AFTER_START = stays listed and registration continues.
+  afterStartPolicy String            @default("UNPUBLISH_AT_START")
+  address          String?
+  coverImage       String?
+  isPublished      Boolean           @default(false)
+  /// ALL = anyone, INCLUDE = only users holding a listed tag,
+  /// EXCLUDE = everyone except users holding a listed tag.
+  visibilityMode   String            @default("ALL")
+  /// Administrator-only; the tags referenced by `visibilityMode`.
+  visibleTags      Tag[]             @relation("EventVisibleTags")
+  /// Tags shown publicly on the event page and card.
+  publicTags       Tag[]             @relation("EventPublicTags")
+  creatorId        String
+  hostId           String?
+  /// The event's hosts. `hostId` is the legacy single-host column.
+  hosts            User[]            @relation("EventHosts")
+  /// Supplies the contact card when `contactMode` is PROFILE.
+  organizerId      String?
+  /// PROFILE = take the organizer's details from their user record,
+  /// CUSTOM = show the administrator's own text instead.
+  contactMode      String            @default("PROFILE")
+  organizer        User?             @relation("EventOrganizer", fields: [organizerId], references: [id])
+  price            Float?
+  /// Symbol or short code shown next to prices: "$", "₽", "€" or "🪙".
+  currency         String            @default("$")
+  priceItems       EventPriceItem[]
+  images           EventImage[]
+  contactInfo      String?
+  pageStyle        String?
+  layout           String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  creator          User             @relation("EventCreator", fields: [creatorId], references: [id])
+  host             User?            @relation("EventHost", fields: [hostId], references: [id])
+  lists            ParticipantList[]
+  registrations    Registration[]
+  /// The event's discussion, shown at the bottom of its page.
+  comments         EventComment[]
+  /// Users an administrator stopped from commenting on this event.
+  commentBlocks    EventCommentBlock[]
+  /// The event's comment thread, mirrored in each participant's Messages.
+  chats            Chat[]             @relation("EventChats")
+
+  @@index([isPublished, dateTime])
+  @@index([endsAt])
+  @@index([visibilityMode])
+  @@index([afterStartPolicy])
+}
+
+model EventPriceItem {
+  id      String @id @default(uuid())
+  eventId String
+  name    String
+  price   Float  @default(0)
+  /// Each charge carries its own currency, like the event's main price.
+  currency String @default("$")
+  order   Int    @default(0)
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+/// Every image shown in the event page carousel, in display order.
+model EventImage {
+  id      String @id @default(uuid())
+  eventId String
+  url     String
+  order   Int    @default(0)
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+model ParticipantList {
+  id            String         @id @default(uuid())
+  name          String
+  eventId       String
+  order         Int            @default(0)
+  isDefault     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  event         Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrations Registration[]
+}
+
+model Registration {
+  id            String    @id @default(uuid())
+  userId        String
+  eventId       String
+  listId        String
+  status        String    @default("PENDING")
+  registeredAt  DateTime  @default(now())
+  confirmedAt   DateTime?
+  confirmedById String?
+  user          User      @relation("UserRegistrations", fields: [userId], references: [id], onDelete: Cascade)
+  event         Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  list          ParticipantList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  confirmedBy   User?     @relation("RegistrationConfirmer", fields: [confirmedById], references: [id])
+
+  @@unique([userId, eventId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// A password reset request. The link is handed to the user by an
+/// administrator, who approves the request from the Status tab.
+model PasswordReset {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// A banner area on the home page: LEFT, MAIN or RIGHT. Side banners
+/// hold a single ad; the main banner rotates through its ads.
+model BannerSlot {
+  id        String     @id @default(uuid())
+  /// LEFT, MAIN or RIGHT.
+  slot      String     @unique
+  /// Seconds between ads in the main banner's rotation.
+  interval  Int        @default(5)
+  isActive  Boolean    @default(true)
+  /// Whether creating or changing an ad in this slot is written to the
+  /// administrator's activity log.
+  logChanges Boolean   @default(true)
+  ads       BannerAd[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+/// One advertisement shown inside a banner slot.
+model BannerAd {
+  id        String     @id @default(uuid())
+  slotId    String
+  slot      BannerSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  /// Display order; the main banner rotates in this order.
+  order     Int        @default(0)
+  /// COVER, COUNTER, POLL, CONTACTS or ANNOUNCEMENT.
+  type      String
+  /// Type-specific settings, stored as JSON.
+  config    String     @default("{}")
+  /// Seconds an ANNOUNCEMENT stays on screen before the rotation continues.
+  duration  Int        @default(5)
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([slotId, order])
+}
+
+/// One poll vote. A signed-in user can vote once per poll.
+model BannerPollVote {
+  id        String   @id @default(uuid())
+  adId      String
+  optionId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([adId, userId])
+  @@index([adId, optionId])
+}
+
+/// A saved banner ad configuration, ready to be applied to new ads.
+model BannerTemplate {
+  id        String   @id @default(uuid())
+  name      String
+  /// COVER, COUNTER, POLL, CONTACTS or ANNOUNCEMENT.
+  type      String
+  /// Type-specific settings, stored as JSON.
+  config    String   @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([type])
+}
+
+/// One message in an event's discussion, at the bottom of the event page.
+///
+/// Threading and quoting are two separate references: `parentId` builds the
+/// nested reply tree, while `quoteCommentId` / `quoteText` record what the
+/// message is answering, without moving it inside the thread.
+model EventComment {
+  id      String @id @default(uuid())
+  eventId String
+  /// Who wrote the comment.
+  authorId String
+  /// Set when the comment is a reply inside a thread.
+  parentId String?
+  /// Set when the comment quotes another comment.
+  quoteCommentId String?
+  /// Set when the comment quotes an element of the event page.
+  quoteText     String?
+  body          String
+  /// Pinned comments are shown before everything else.
+  pinned    Boolean   @default(false)
+  pinnedAt  DateTime?
+  pinnedById String?
+  /// A banned comment stays in the database but is hidden from everyone but
+  /// administrators, so a moderator decision can be undone.
+  banned    Boolean   @default(false)
+  bannedAt  DateTime?
+  bannedById String?
+  /// Soft delete keeps a thread's structure when its root is removed.
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  event        Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  author       User           @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  parent       EventComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies      EventComment[] @relation("CommentReplies")
+  quoteComment EventComment?  @relation("CommentQuotes", fields: [quoteCommentId], references: [id], onDelete: SetNull)
+  quotedBy     EventComment[] @relation("CommentQuotes")
+
+  @@index([eventId, createdAt])
+  @@index([parentId])
+  @@index([authorId])
+  @@index([pinned])
+}
+
+/// One administrator decision stopping a user from commenting on one event.
+model EventCommentBlock {
+  id          String   @id @default(uuid())
+  eventId     String
+  userId      String
+  createdById String
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User  @relation("CommentBlockedUser", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User  @relation("CommentBlockCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+
+/// One conversation in the Messages section.
+///
+/// SUPPORT is the feedback chat between a user and the technical support
+/// team: any administrator reads and answers it, and their messages are
+/// shown to the user as coming from "Technical Support" while the real
+/// author stays on record in the activity log. ADMIN is a personal
+/// conversation between one user and one administrator, opened by the
+/// administrator. EVENT mirrors an event's comment thread for the user
+/// who started it; its messages are the event's comments themselves, so
+/// nothing is duplicated. A standard user can never open a chat of their
+/// own accord: it appears once there is something to answer — feedback
+/// sent, an administrator reaching out, or a comment on an event.
+model Chat {
+  id String @id @default(uuid())
+  /// SUPPORT, ADMIN or EVENT.
+  kind String
+  /// The standard user the chat belongs to. Administrators read the
+  /// SUPPORT and EVENT chats of every user; an ADMIN chat is theirs alone.
+  userId String
+  /// The administrator on the other side of an ADMIN chat.
+  adminId String?
+  /// The event an EVENT chat mirrors; null for the other kinds.
+  eventId String?
+  /// Set by an administrator: the user may read the chat but not write.
+  userReadOnly Boolean @default(false)
+  /// When the thread last moved, for ordering the chat list.
+  lastMessageAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User          @relation("ChatUser", fields: [userId], references: [id], onDelete: Cascade)
+  admin    User?         @relation("ChatAdmin", fields: [adminId], references: [id], onDelete: SetNull)
+  event    Event?        @relation("EventChats", fields: [eventId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+  reads    ChatRead[]
+
+  @@unique([kind, userId, eventId])
+  @@unique([kind, userId, adminId])
+  @@index([userId, kind])
+  @@index([kind, lastMessageAt])
+}
+
+/// One message of a SUPPORT or ADMIN chat. The body is sanitized HTML,
+/// exactly like the feedback form's text.
+model ChatMessage {
+  id String @id @default(uuid())
+  chatId String
+  /// Who wrote it. In a SUPPORT chat the author is the administrator who
+  /// answered, while the chat shows the message as "Technical Support".
+  authorId String
+  body String
+  createdAt DateTime @default(now())
+
+  chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  author User @relation("ChatMessageAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([chatId, createdAt])
+}
+
+/// When one participant last read a chat, which is what the unread
+/// counts are worked out from.
+model ChatRead {
+  id String @id @default(uuid())
+  chatId String
+  userId String
+  lastReadAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user User @relation("ChatReadUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, userId])
+}
+
+/// A saved event editor configuration: the page style, element layout,
+/// visibility rules, price setup and every other setting the event editor
+/// holds, stored as JSON. A new event can start from a template so a club
+/// night always looks the same without re-entering the details.
+///
+/// The title, key, date and publish state deliberately stay out: a template
+/// describes how an event looks, not which event it is.
+model EventTemplate {
+  id   String @id @default(uuid())
+  name String
+  /// The administrator who saved it; templates are shared with every
+  /// administrator, so this is only recorded for attribution.
+  createdById String
+  /// The editor's settings, in the shape the event create/update payload uses.
+  data Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy User @relation("TemplateAuthor", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+}
+
+/// A single key/value application setting. Small by design: everything the
+/// interface toggles that is not worth a table of its own.
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+/// One line in the administrator's activity log.
+///
+/// The actor is denormalised on purpose: an entry keeps its meaning after the
+/// account behind it is deleted. `message` and `meta` carry the feedback
+/// payload; every other category only needs `detail`.
+model ActivityLog {
+  id      String @id @default(uuid())
+  /// REGISTRATION, GUEST_APPROVAL, PASSWORD_RESET, EVENT_CREATED,
+  /// EVENT_UPCOMING, COMMENT, COMMENT_REPLY, BANNER or FEEDBACK.
+  category String
+  /// Who performed the action; null for entries the system generated.
+  actorId    String?
+  actorName  String?
+  /// What the entry is about: EVENT, COMMENT, BANNER or USER.
+  targetType String?
+  targetId   String?
+  targetName String?
+  /// Short summary of what changed, such as a comment excerpt.
+  detail String?
+  /// Feedback message body, stored as sanitized HTML.
+  message String?
+  /// JSON payload for the entry's extras, e.g. a feedback attachment.
+  meta String?
+  createdAt DateTime @default(now())
+
+  actor User? @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([category])
+}
+
+/// One user copying a copyable reference out of a counter banner's details.
+///
+/// The reference is the @handle as shown, without its marker. One row per
+/// user and reference keeps the list bounded; repeat copies of the same
+/// reference are counted instead of piling up.
+model BannerCounterCopy {
+  id        String   @id @default(uuid())
+  adId      String
+  userId    String
+  reference String
+  count     Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([adId, userId, reference])
+  @@index([adId])
+}
+
+/// A notification every eligible user sees: a new event, a reminder, an
+/// organizer update or an announcement.
+///
+/// Eligibility is worked out when the notification is read, so one row
+/// serves everybody it applies to. What a single user did with it - read or
+/// hidden - lives in a receipt, which is also what makes deleting one
+/// per-user rather than system-wide.
+model BroadcastNotification {
+  id String @id @default(uuid())
+  /// EVENT_CREATED, EVENT_REMINDER, ORGANIZER_UPDATE or ANNOUNCEMENT.
+  type String
+  /// EVENT or BANNER_AD: what the notification is about, and the thing whose
+  /// deletion takes it out of the system.
+  sourceType String
+  sourceId   String
+  title      String
+  message    String?
+  /// JSON extras, such as the date a reminder points at.
+  meta String?
+  /// The organizer behind an update, when there is one.
+  senderId String?
+  createdAt DateTime @default(now())
+
+  receipts BroadcastReceipt[]
+
+  @@index([sourceType, sourceId])
+  @@index([createdAt])
+}
+
+/// One user's state for a broadcast: read, hidden, or both.
+model BroadcastReceipt {
+  id          String    @id @default(uuid())
+  broadcastId String
+  userId      String
+  readAt      DateTime?
+  hiddenAt    DateTime?
+  createdAt   DateTime  @default(now())
+
+  broadcast BroadcastNotification @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+
+  @@unique([broadcastId, userId])
+  @@index([userId])
+}
+
+/// A notification addressed to exactly one user, such as a reply to their
+/// comment or a message from an administrator. Deleting the row removes the
+/// notification for good.
+model Notification {
+  id     String @id @default(uuid())
+  userId String
+  /// COMMENT_REPLY, COMMENT_BAN, COMMENT_BLOCK, ADMIN_MESSAGE,
+  /// REGISTRATION_CONFIRMED, LIST_TRANSFER, LIST_REMOVAL or PASSWORD_RESET.
+  type String
+  title String
+  message String?
+  /// EVENT, COMMENT, BANNER_AD or USER: where a click leads.
+  targetType String?
+  targetId   String?
+  /// JSON extras, such as which event a comment belongs to.
+  meta String?
+  readAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation("NotificationUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+}

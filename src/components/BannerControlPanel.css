@@ -1,0 +1,54 @@
+/* Banner control panel, at the top of the activity log in the Status tab. */
+.bcp-section{margin-top:28px}
+.bcp-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.bcp-header h3{margin:0 0 4px}
+.bcp-header .admin-hint{margin:0;max-width:70ch}
+.bcp-loading{display:flex;align-items:center;gap:10px;color:#6b7280;font-size:.85rem}
+.bcp-card{margin-top:16px;padding:16px 18px;background:#fff;border:1px solid #0000000f;border-radius:12px}
+.bcp-card-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.bcp-card-head h4{margin:0;font-size:.95rem;color:#111827}
+.bcp-total{font-size:.75rem;font-weight:700;color:#6b7280;white-space:nowrap}
+.bcp-current{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:12px}
+.bcp-current label{font-size:.8rem;font-weight:600;color:#374151}
+.bcp-current input{width:120px;height:32px;padding:0 8px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#111827;font:inherit;font-size:.85rem}
+.bcp-target{font-size:.8rem;color:#6b7280}
+.bcp-saved{font-size:.78rem;font-weight:600;color:#047857}
+.bcp-empty{margin:0;font-size:.82rem;color:#9ca3af;font-style:italic}
+.bcp-references,.bcp-options{display:flex;flex-direction:column;gap:10px}
+.bcp-reference{padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#fafafa}
+.bcp-reference-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:6px}
+.bcp-reference-code{font-family:"Fira Code","Courier New",monospace;font-size:.82rem;font-weight:700;color:#1d4ed8}
+.bcp-reference-count{font-size:.72rem;color:#6b7280;white-space:nowrap}
+.bcp-option{padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#fafafa}
+.bcp-option-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:6px}
+.bcp-option-text{font-size:.85rem;font-weight:600;color:#1f2937}
+.bcp-option-count{font-size:.72rem;font-weight:700;color:#1d4ed8;white-space:nowrap}
+.bcp-people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.bcp-person{display:flex;align-items:center;gap:8px;font-size:.78rem;color:#374151}
+.bcp-person-name{font-weight:600;white-space:nowrap}
+.bcp-person-contact{color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.bcp-person-count{font-size:.72rem;font-weight:700;color:#1d4ed8}
+.bcp-person-time{margin-left:auto;font-size:.7rem;color:#9ca3af;white-space:nowrap}
+
+/* ---- Dark theme ---- */
+[data-theme="dark"] .bcp-loading{color:#9ca3af}
+[data-theme="dark"] .bcp-card{background:#1f2937d9;border-color:#ffffff14}
+[data-theme="dark"] .bcp-card-head h4{color:#f9fafb}
+[data-theme="dark"] .bcp-total,[data-theme="dark"] .bcp-reference-count,[data-theme="dark"] .bcp-person-time{color:#9ca3af}
+[data-theme="dark"] .bcp-current{background:#111827d9;border-color:#374151}
+[data-theme="dark"] .bcp-current label{color:#d1d5db}
+[data-theme="dark"] .bcp-current input{background:#1f2937;border-color:#4b5563;color:#f9fafb}
+[data-theme="dark"] .bcp-target{color:#9ca3af}
+[data-theme="dark"] .bcp-saved{color:#a7f3d0}
+[data-theme="dark"] .bcp-empty{color:#9ca3af}
+[data-theme="dark"] .bcp-reference,[data-theme="dark"] .bcp-option{background:#111827b3;border-color:#374151}
+[data-theme="dark"] .bcp-reference-code,[data-theme="dark"] .bcp-option-count{color:#93c5fd}
+[data-theme="dark"] .bcp-person{color:#d1d5db}
+[data-theme="dark"] .bcp-person-contact,[data-theme="dark"] .bcp-person-count{color:#9ca3af}
+
+@media (max-width:640px){
+  .bcp-card{padding:12px 14px}
+  .bcp-person-contact{max-width:110px}
+  .bcp-person-time{margin-left:0;width:100%}
+  .bcp-person{flex-wrap:wrap}
+}

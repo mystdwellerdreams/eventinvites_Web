@@ -1,0 +1,54 @@
+# Dependencies are installed by Vercel from the lockfile.
+node_modules
+
+# Build output is produced during the Vercel build.
+.next
+dist
+build
+backend/dist
+
+# Local development artefacts. The database lives in PostgreSQL, but a stray
+# SQLite file or a local upload directory should never be uploaded.
+backend/prisma/*.db
+backend/prisma/*.db-journal
+backend/prisma/dev.db*
+backend/uploads
+
+# Secrets belong in Vercel project settings, never in the uploaded source.
+.env
+.env.*
+backend/.env
+backend/.env.*
+# Neon CLI writes live credentials here on `neon link`.
+.env.local
+backend/.env.local
+# Service account keys should never be uploaded.
+firebase-adminsdk*.json
+# Keep the templates, which document what needs setting.
+!.env.example
+!backend/.env.example
+
+# Local tooling and editor state.
+.git
+.gitignore
+.vscode
+.idea
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+pgdata
+.pgdata
+
+# The native Android shell is built and shipped separately; Vercel has no use
+# for the Gradle project or its build output.
+android
+
+# Local-only checks. `npm run test:handler` runs this; Vercel has no use for it.
+test-handler.mts
+check-migration.cjs
+inspect-sections.cjs
+pglite-server.mjs
+pg-run.mjs
+convert-routing.cjs
+drop-js-extensions.cjs

@@ -1,0 +1,16 @@
+.share-menu{position:relative;display:inline-block}
+.share-menu-dropdown{position:absolute;right:0;top:calc(100% + 6px);min-width:220px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 10px 25px #00000026;z-index:var(--z-dropdown);padding:6px;animation:contact-menu-in .12s ease-out}
+.share-menu-item{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:6px;text-decoration:none;color:#1f2937;background:none;border:0;font:inherit;cursor:pointer;transition:background .15s;text-align:left}
+.share-menu-item:hover{background:#f3f4f6}
+.share-menu-icon{font-size:1rem;flex-shrink:0}
+.share-menu-text{display:flex;flex-direction:column;min-width:0}
+.share-menu-text strong{font-size:.85rem;font-weight:600}
+.share-menu-note{margin:6px 4px 4px;font-size:.75rem;color:#b45309}
+.share-menu-fallback{width:100%;margin:0 2px 2px;font-family:inherit;font-size:.75rem;color:#374151;background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;padding:6px;resize:vertical}
+
+/* ---- Dark theme: diametrically opposite tones ---- */
+[data-theme="dark"] .share-menu-dropdown{background:#1f2937;border-color:#374151;box-shadow:0 10px 25px #00000080}
+[data-theme="dark"] .share-menu-item{color:#e5e7eb}
+[data-theme="dark"] .share-menu-item:hover{background:#374151}
+[data-theme="dark"] .share-menu-note{color:#fbbf24}
+[data-theme="dark"] .share-menu-fallback{color:#d1d5db;background:#1f2937;border-color:#4b5563}

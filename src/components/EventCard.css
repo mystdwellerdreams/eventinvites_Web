@@ -1,0 +1,32 @@
+.event-card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px #00000014;transition:transform .2s,box-shadow .2s;cursor:pointer}
+.event-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px #0000001f}
+.event-card-cover{position:relative;height:160px;background:#f0f0f0;overflow:hidden}
+.event-card-cover img{width:100%;height:100%;object-fit:cover}
+.event-card-cover-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;color:#ccc}
+.event-card-date{position:absolute;top:12px;left:12px;background:#fff;border-radius:8px;padding:4px 8px;display:flex;flex-direction:column;align-items:center;box-shadow:0 2px 8px #00000026}
+.event-card-day{font-size:1.25rem;font-weight:700;color:#1a1a1a;line-height:1.2}
+.event-card-month{font-size:.75rem;font-weight:600;color:#666;text-transform:uppercase}
+.event-card-body{padding:16px}
+.event-card-titlerow{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.event-card-titlerow .event-card-title{margin:0}
+/* The live marker lives beside the title now; the cover shows only the date. */
+.event-card-closed{margin:0;font-size:.8rem;color:#6b7280;font-style:italic}
+.event-card-title{margin:0 0 8px;font-size:1.1rem;color:#1a1a1a;line-height:1.3}
+.event-card-desc{margin:0 0 12px;font-size:.85rem;color:#555;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.event-card-meta{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:#666;margin-bottom:12px}
+.event-card-price{display:inline-block;font-weight:700;color:#059669;font-size:.9rem;margin-bottom:12px}
+.event-card-actions{display:flex;flex-direction:column;gap:8px}
+
+/* ---- Dark theme: diametrically opposite tones ---- */
+[data-theme="dark"] .event-card{background:#1f2937;box-shadow:0 1px 3px #00000066}
+[data-theme="dark"] .event-card:hover{box-shadow:0 8px 24px #00000080}
+[data-theme="dark"] .event-card-cover{background:#374151}
+[data-theme="dark"] .event-card-cover-placeholder{color:#6b7280}
+[data-theme="dark"] .event-card-date{background:#1f2937;box-shadow:0 2px 8px #00000066}
+[data-theme="dark"] .event-card-day{color:#f9fafb}
+[data-theme="dark"] .event-card-month{color:#9ca3af}
+[data-theme="dark"] .event-card-closed{color:#9ca3af}
+[data-theme="dark"] .event-card-title{color:#f9fafb}
+[data-theme="dark"] .event-card-desc{color:#d1d5db}
+[data-theme="dark"] .event-card-meta{color:#9ca3af}
+[data-theme="dark"] .event-card-price{color:#34d399}

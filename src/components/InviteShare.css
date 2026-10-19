@@ -1,0 +1,16 @@
+.invite-share{display:flex;flex-direction:column;gap:10px}
+.invite-share-row{display:flex;align-items:center;gap:8px}
+.invite-share-url{flex:1;min-width:0;font-family:Fira Code,ui-monospace,monospace;font-size:.82rem;background:#f8fafc}
+.invite-share-note{margin:0;color:#b45309;font-size:.8rem}
+.invite-share-targets{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.invite-share-label{font-size:.82rem;color:#6b7280;margin-right:2px}
+.invite-share-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid #e5e7eb;border-radius:999px;background:#fff;color:#374151;font-size:.8rem;font-weight:500;text-decoration:none;white-space:nowrap;transition:background .15s,border-color .15s}
+.invite-share-btn:hover{background:#f3f4f6;border-color:#9ca3af}
+.invite-share-btn:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
+
+/* ---- Dark theme: diametrically opposite tones ---- */
+[data-theme="dark"] .invite-share-url{background:#1f2937}
+[data-theme="dark"] .invite-share-note{color:#fbbf24}
+[data-theme="dark"] .invite-share-label{color:#9ca3af}
+[data-theme="dark"] .invite-share-btn{background:#1f2937;border-color:#4b5563;color:#d1d5db}
+[data-theme="dark"] .invite-share-btn:hover{background:#374151;border-color:#6b7280}

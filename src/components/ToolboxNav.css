@@ -1,0 +1,26 @@
+/* The toolbox: a column of round buttons on the right edge, with the
+   compass pinned to the bottom corner. The compass and the back-to-top
+   button never move; the section buttons between them are the ones that
+   scroll when they no longer fit. */
+
+.toolbox{position:fixed;right:14px;/* Lifted clear of the pinned panel at the bottom edge, and of
+     the connection controller when one is showing. */bottom:calc(var(--tb-avoid,0px) + var(--connectivity-height,0px) + 14px);z-index:50;display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+  /* The column stops below the header and any sticky bar the page keeps
+     there; the section list scrolls once the buttons would grow past
+     that. */
+  max-height:calc(100dvh - var(--tb-header,64px) - var(--tb-sticky,0px) - var(--tb-avoid,0px) - var(--connectivity-height,0px) - 28px)}
+.toolbox-menu{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:2px}
+.toolbox-toggle,.toolbox-top,.toolbox-item{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:48px;height:48px;padding:0;border:1px solid #e5e7eb;border-radius:50%;background:#ffffffe0;backdrop-filter:blur(8px);box-shadow:0 4px 14px #0000001f;color:#374151;line-height:1;cursor:pointer;transition:background .15s,transform .15s,box-shadow .15s}
+.toolbox-top,.toolbox-item{width:40px;height:40px}
+.toolbox-toggle{font-size:1.35rem}
+.toolbox-top{font-size:1.2rem}
+.toolbox-item{font-size:1.1rem}
+.toolbox-toggle:hover,.toolbox-top:hover,.toolbox-item:hover{background:#fff;transform:translateY(-1px);box-shadow:0 6px 18px #00000026}
+.toolbox-toggle[aria-expanded="true"]{background:#3b82f6;border-color:#3b82f6;color:#fff}
+.toolbox-item.is-active{background:#3b82f6;border-color:#3b82f6;color:#fff}
+.toolbox-toggle:focus-visible,.toolbox-top:focus-visible,.toolbox-item:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
+
+/* ---- Dark theme ---- */
+[data-theme="dark"] .toolbox-toggle,[data-theme="dark"] .toolbox-top,[data-theme="dark"] .toolbox-item{background:#1f2937e0;border-color:#4b5563;color:#d1d5db;box-shadow:0 4px 14px #00000066}
+[data-theme="dark"] .toolbox-toggle:hover,[data-theme="dark"] .toolbox-top:hover,[data-theme="dark"] .toolbox-item:hover{background:#374151}
+[data-theme="dark"] .toolbox-toggle[aria-expanded="true"],[data-theme="dark"] .toolbox-item.is-active{background:#3b82f6;border-color:#3b82f6;color:#fff}

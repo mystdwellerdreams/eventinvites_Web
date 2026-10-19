@@ -1,0 +1,29 @@
+.tag-cloud{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tag-cloud-empty{margin:0;color:#6b7280;font-size:.875rem;font-style:italic}
+.tag-cloud-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid #d1d5db;border-radius:999px;background:#f9fafb;color:#374151;cursor:pointer;font-weight:500;line-height:1.2;white-space:nowrap;transition:background .15s,border-color .15s,color .15s,transform .1s}
+.tag-cloud-pill:hover{background:#f3f4f6;border-color:#9ca3af}
+.tag-cloud-pill:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
+.tag-cloud-md .tag-cloud-pill.weight-0{padding:5px 12px;font-size:.78rem}
+.tag-cloud-md .tag-cloud-pill.weight-1{padding:7px 15px;font-size:.92rem;font-weight:600}
+.tag-cloud-md .tag-cloud-pill.weight-2{padding:9px 18px;font-size:1.08rem;font-weight:700;background:#eef2ff;border-color:#c7d2fe;color:#3730a3}
+.tag-cloud-sm .tag-cloud-pill.weight-0{padding:3px 9px;font-size:.7rem}
+.tag-cloud-sm .tag-cloud-pill.weight-1{padding:4px 11px;font-size:.78rem;font-weight:600}
+.tag-cloud-sm .tag-cloud-pill.weight-2{padding:5px 13px;font-size:.86rem;font-weight:700}
+.tag-cloud-count{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#6b728029;color:inherit;font-size:.68rem;font-weight:700}
+.tag-cloud-pill.is-selected{border-color:#3b82f6;background:#dbeafe;color:#1e40af;box-shadow:0 0 0 3px #3b82f626}
+.tag-cloud-pill.is-active{border-color:#10b981;background:#d1fae5;color:#065f46}
+.tag-cloud-pill.is-selected.is-active{border-color:#3b82f6;background:#dbeafe;color:#1e40af}
+.tag-cloud-pill.is-pending-delete{border-color:#ef4444;background:#fee2e2;color:#b91c1c;animation:tag-pulse 1.1s ease-in-out infinite}
+.tag-cloud-wrap{padding:16px 0 4px;border-top:1px dashed #e5e7eb;margin-top:4px}
+
+/* ---- Dark theme: diametrically opposite tones ---- */
+[data-theme="dark"] .tag-cloud-empty{color:#9ca3af}
+[data-theme="dark"] .tag-cloud-pill{background:#1f2937;border-color:#4b5563;color:#d1d5db}
+[data-theme="dark"] .tag-cloud-pill:hover{background:#374151;border-color:#6b7280}
+[data-theme="dark"] .tag-cloud-md .tag-cloud-pill.weight-2{background:#1e3a5f;border-color:#1e3a5f;color:#93c5fd}
+[data-theme="dark"] .tag-cloud-count{background:#ffffff1a}
+[data-theme="dark"] .tag-cloud-pill.is-selected{background:#1e3a5f;color:#93c5fd;box-shadow:0 0 0 3px #60a5fa26}
+[data-theme="dark"] .tag-cloud-pill.is-active{background:#064e3b;color:#6ee7b7}
+[data-theme="dark"] .tag-cloud-pill.is-selected.is-active{background:#1e3a5f;color:#93c5fd}
+[data-theme="dark"] .tag-cloud-pill.is-pending-delete{background:#451a1a;color:#fca5a5}
+[data-theme="dark"] .tag-cloud-wrap{border-top-color:#374151}

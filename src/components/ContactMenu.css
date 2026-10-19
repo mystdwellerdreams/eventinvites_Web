@@ -1,0 +1,14 @@
+.contact-menu{position:relative;display:inline-block}
+.contact-menu-dropdown{position:absolute;right:0;top:calc(100% + 6px);min-width:240px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 10px 25px #00000026;z-index:var(--z-dropdown);padding:6px;animation:contact-menu-in .12s ease-out}
+.contact-menu-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;text-decoration:none;color:#1f2937;transition:background .15s}
+.contact-menu-item:hover{background:#f3f4f6}
+.contact-menu-icon{font-size:1rem;flex-shrink:0}
+.contact-menu-text{display:flex;flex-direction:column;min-width:0}
+.contact-menu-text strong{font-size:.85rem;font-weight:600}
+.contact-menu-text em{font-size:.75rem;color:#6b7280;font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:190px}
+
+/* ---- Dark theme: diametrically opposite tones ---- */
+[data-theme="dark"] .contact-menu-dropdown{background:#1f2937;border-color:#374151;box-shadow:0 10px 25px #00000080}
+[data-theme="dark"] .contact-menu-item{color:#e5e7eb}
+[data-theme="dark"] .contact-menu-item:hover{background:#374151}
+[data-theme="dark"] .contact-menu-text em{color:#9ca3af}
