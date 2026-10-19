@@ -18,20 +18,20 @@ customize events, and registered users sign up for them.
 ## Getting started
 
 ```bash
-npm install          # installs both workspaces
+npm install          # installs the root workspace and backend/
 cp backend/.env.example backend/.env
-docker compose up -d # local PostgreSQL on :5432
+# set DATABASE_URL in backend/.env to a PostgreSQL instance
 npm run db:deploy    # apply migrations
 npm run db:seed      # create the default accounts and sample events
-npm run dev          # backend on :4000, frontend on :3000
+npm run dev          # Next.js on :3000, serving the pages and the API
 ```
 
 Open http://localhost:3000.
 
-> **PostgreSQL is required.** The app originally used a SQLite file, which
+> **PostgreSQL is required.** An earlier version used a SQLite file, which
 > cannot work on Vercel: serverless filesystems are ephemeral, so every deploy
-> and cold start would wipe the database. `docker compose up -d` gives you the
-> same engine locally.
+> and cold start would wipe the database. Point `DATABASE_URL` at any
+> PostgreSQL server — Neon, Supabase, or one you run locally.
 
 ### Default accounts
 
@@ -80,7 +80,7 @@ higher rank.
 ### Home page
 
 The home page is a list of sections rendered from `HOME_SECTIONS` in
-`frontend/src/pages/HomePage.tsx`. Only **upcoming events open for
+`src/screens/HomePage.tsx`. Only **upcoming events open for
 registration** is included for now; adding another section is a single entry in
 that registry. On each event card a signed-in visitor gets a **Join** button per
 participant list, and a visitor gets **Participate**, which opens the login
@@ -284,16 +284,12 @@ its tags, exactly like the event page.
 ## Project layout
 
 ```
-vercel.json               single-project config (both halves, same origin)
-api/[...path].ts          serverless entry for that single-project layout
-docker-compose.yml        local PostgreSQL for development
-tsconfig.vercel.json      typechecks the root serverless entry
+vercel.json               Vercel build: migrate, then next build
 neon.ts                   Neon config (infrastructure as code)
 
 backend/
-  vercel.json             API-project config: function + migrations, no static output
+  package.json            the API workspace (installed by the root npm install)
   .vercelignore           applied when backend/ is the Vercel project root
-  api/index.ts            serverless entry for the API project
   scripts/                deploy-migrations.mjs, a DATABASE_URL preflight
   prisma/schema.prisma    data model (PostgreSQL)
   prisma/migrations/      checked-in migrations applied on deploy
@@ -304,7 +300,8 @@ backend/
   src/routes/             auth, events, users, admin, tags, upload, devices
   src/utils/              Prisma client, Zod schemas, roles, storage, push
 app/                      Next.js App Router pages and the /api catch-all
-  api/[...path]/route.ts  adapts the Express app to a route handler
+  api/[...path]/route.ts  the only serverless entry: it adapts the Express app
+                          to a route handler, so pages and API share an origin
 src/
   components/             layout, auth modal, event card, bell, native bridge
   context/                auth session and auth-modal state
@@ -319,11 +316,10 @@ android/                  Capacitor Android project (Gradle, manifest, resources
 docs/ANDROID.md           Firebase setup, the build steps, and how push is wired
 ```
 
-`app.ts` and `index.ts` are split deliberately: Vercel imports `app` as a
-request handler and never calls `listen`, while `npm run dev` and any
-long-running host still start a normal server. There are two serverless entries
-because there are two project roots: `api/[...path].ts` for the single-project
-layout and `backend/api/index.ts` for the split one. Both export the same app.
+`app.ts` and `index.ts` are split deliberately: the Next catch-all imports
+`app` as a request handler and never calls `listen`, while `npm run dev:backend`
+and any long-running host start a normal server. There is one serverless entry,
+`app/api/[...path]/route.ts`, and it exports the same app.
 
 ## Notes on the data model
 
@@ -370,99 +366,65 @@ layer is a no-op.
 
 ## Deploying to Vercel
 
-The repository supports two layouts:
+The repository deploys as **one Vercel project** rooted at the repository root.
+The root `vercel.json` runs `prisma generate && prisma migrate deploy &&
+next build`, and `app/api/[...path]/route.ts` mounts the Express app as the
+only serverless function, so the pages and the API share one origin and one
+domain.
 
-- **Two projects (recommended).** A frontend project rooted at `frontend/` and
-  an API project rooted at `backend/`. The frontend calls the API across
-  origins.
-- **One project.** The root `vercel.json` still builds both halves together and
-  puts the API on the same origin. Useful while developing, but not the
-  recommended production shape.
+| Setting        | Value                                                      |
+| -------------- | ---------------------------------------------------------- |
+| Root Directory | the repository root                                        |
+| Build Command  | from `vercel.json`: generate, migrate, `next build`        |
+| Function       | `app/api/[...path]/route.ts` — 30 s, 1 GB                  |
 
-### Two-project layout
+Environment variables, on **Production and Preview** alike (the build applies
+migrations, so preview builds need them too):
 
-Create **two** Vercel projects from the same repository, with different Root
-Directory settings.
+| Variable                | Required | Purpose                                        |
+| ----------------------- | -------- | ---------------------------------------------- |
+| `DATABASE_URL`          | yes      | PostgreSQL connection string                   |
+| `JWT_SECRET`            | yes      | signs access tokens                            |
+| `REFRESH_SECRET`        | yes      | signs refresh tokens                           |
+| `BLOB_READ_WRITE_TOKEN` | yes      | object storage for uploaded images             |
+| `TURNSTILE_SECRET_KEY`  | no       | server-side captcha check                      |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | no | inlines the captcha widget                |
+| `FCM_SERVICE_ACCOUNT_JSON` | no    | enables push to the Android app                |
+| `FRONTEND_URL`          | no       | extra origins allowed to call the API          |
 
-#### API project
-
-Root Directory: `backend`. Uses `backend/vercel.json`, which exposes
-`backend/api/index.ts` as the serverless function and runs
-`prisma generate && prisma migrate deploy && tsc`.
-
-Environment variables:
-
-| Variable                | Required | Purpose                                       |
-| ----------------------- | -------- | --------------------------------------------- |
-| `DATABASE_URL`          | yes      | PostgreSQL connection string                  |
-| `JWT_SECRET`            | yes      | signs access tokens                           |
-| `REFRESH_SECRET`        | yes      | signs refresh tokens                          |
-| `BLOB_READ_WRITE_TOKEN` | yes      | object storage for uploaded images            |
-| `FRONTEND_URL`          | **yes**  | the frontend's origin, e.g. `https://app.vercel.app` |
-
-`FRONTEND_URL` is what enables cross-origin cookies and CORS. Set it to the
-frontend URL **after** deploying the frontend, or copy the predicted URL from
-the project settings, then redeploy the API.
-
-#### Frontend project
-
-Root Directory: `frontend`. Uses `frontend/vercel.json`: a static Vite build
-with an SPA rewrite.
-
-| Variable         | Required | Purpose                                          |
-| ---------------- | -------- | ------------------------------------------------ |
-| `VITE_API_BASE`  | **yes**  | the API origin, e.g. `https://api.vercel.app/api` |
-
-Deploy the **API first**, then the frontend, so `VITE_API_BASE` has something to
-point at.
+Generate secrets with `openssl rand -base64 32`.
 
 ### Provisioning
 
 1. **PostgreSQL.** Neon, Supabase or Vercel Postgres. Copy the connection
    string. Strip any surrounding quotes.
-2. **Blob.** Create a Blob store in the API project. Without it, uploads fall
-   back to the ephemeral function filesystem and are lost on the next cold
-   start.
+2. **Blob.** Create a Blob store in the project. Without it, uploads fall back
+   to the ephemeral function filesystem and are lost on the next cold start.
 
-Generate secrets with `openssl rand -base64 32`.
+### Cookies and CORS
 
-### Why the cookies change
+Because the pages and the API are one origin, the auth cookies are ordinary
+first-party `SameSite=Lax; HttpOnly` cookies and CORS never comes into play.
+`FRONTEND_URL` lists further origins that may call the API, comma-separated —
+the Android app's `https://localhost` WebView is one. When it is set in
+production, `backend/src/utils/cookies.ts` switches the auth cookies to
+`SameSite=None; Secure` so those extra origins are served as well; either way
+every set and clear goes through the same helper, so a logout or refresh cannot
+leave a stale cookie behind. CORS echoes only the listed origins: with it unset
+no CORS headers are emitted at all, because reflecting an arbitrary origin
+alongside credentials would let any site read authenticated responses.
 
-`vercel.app` is on the Public Suffix List, so `app.vercel.app` and
-`api.vercel.app` are **cross-site**, not merely cross-origin. SameSite=Lax
-cookies would never be sent, which breaks sign-in with no visible error.
-
-When `FRONTEND_URL` is set and `NODE_ENV=production`, `backend/src/utils/cookies.ts`
-switches the auth cookies to `SameSite=None; Secure; HttpOnly; Path=/`. Every
-cookie deletion goes through the same helper, so a logout or refresh cannot
-leave a stale cookie behind.
-
-CORS only echoes origins listed in `FRONTEND_URL` (comma-separated for several).
-With it unset no CORS headers are sent at all, because reflecting an arbitrary
-origin alongside credentials would let any site read authenticated responses.
+`GET /api/health` reports `corsOrigins` and `crossSiteCookies`, which is the
+quickest way to confirm the deployment is configured as intended.
 
 ### Uploaded image URLs
 
-Uploads are stored in the database as `/uploads/<file>`. That resolves against
-the API origin, which is correct only when one server serves both. In the
-two-project layout `resolveAssetUrl()` in `frontend/src/utils/api.ts` prefixes
-those paths with the API origin, and absolute or `data:` URLs pass through
-untouched. It is a no-op when `VITE_API_BASE` is unset, so the same code serves
-local development.
-
-### Single-project layout
-
-The root `vercel.json` builds both workspaces, outputs `frontend/dist`, and
-rewrites:
-
-| Source                | Destination       | Why                                               |
-| --------------------- | ----------------- | ------------------------------------------------- |
-| `/api/(.*)`           | `/api/[...path]`  | Every API route reaches the one serverless function |
-| `/uploads/(.*)`       | `/api/[...path]`  | Uploaded images are served by the same function   |
-| everything else       | `/index.html`     | Client-side routes have no file on disk            |
-
-The last rewrite is what makes deep links such as `/profile`, `/admin` or
-`/events/<id>` work: React Router paths are not files, so without it they 404.
+Uploads are stored in the database as `/uploads/<file>`, which resolves against
+the current origin — correct while one server serves both. If the API ever
+moves to another origin, `resolveAssetUrl()` in `src/utils/api.ts` prefixes
+those paths with `NEXT_PUBLIC_API_BASE`, and absolute or `data:` URLs pass
+through untouched. It is a no-op while that variable is unset, so one code path
+serves local development, production and the Android app.
 
 ### Migrating an existing database
 
@@ -492,7 +454,7 @@ or point at an empty database.
 | `npm run db:check`        | Preflight the migrations without applying them |
 | `npm run db:seed`         | Seed default accounts and sample events        |
 | `npm run db:studio`       | Open Prisma Studio                             |
-| `npm run test:handler`    | Smoke-test the serverless entry (no DB needed) |
+| `npm run typecheck`       | Type-check the app and the API (`tsc --noEmit`) |
 | `npm run android:assets`  | Generate icons and splash from `public/logo.png` |
 | `npm run android:sync`    | Build the web config into the Android project  |
 | `npm run android:open`    | Open `android/` in Android Studio              |

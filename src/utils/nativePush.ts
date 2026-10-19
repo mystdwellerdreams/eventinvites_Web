@@ -38,6 +38,28 @@ export async function currentPlatform(): Promise<string> {
   }
 }
 
+/** The installed build's name and number, for the Profile screen and devices. */
+export interface AppInfo {
+  version: string
+  build: string
+}
+
+/**
+ * Reads the version Android installed. Outside the native shell there is no
+ * build to report, so the web app's own package version is used instead and
+ * nothing about the browser is sent to the server.
+ */
+export async function getAppInfo(): Promise<AppInfo | null> {
+  if (!(await isNativeApp())) return null
+  try {
+    const { App } = await import('@capacitor/app')
+    const info = await App.getInfo()
+    return { version: info.version, build: info.build }
+  } catch {
+    return null
+  }
+}
+
 export function getStoredPushToken(): string | null {
   try {
     return window.localStorage.getItem(PUSH_TOKEN_KEY)

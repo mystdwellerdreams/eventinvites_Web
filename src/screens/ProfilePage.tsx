@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useAuthModal } from '../context/AuthModalContext'
-import { authAPI, uploadAPI, apiErrorMessage, resolveAssetUrl } from '../utils/api'
+import { authAPI, uploadAPI, devicesAPI, apiErrorMessage, resolveAssetUrl } from '../utils/api'
+import { getAppInfo, isNativeApp, type AppInfo } from '../utils/nativePush'
 import type { SocialLink } from '../types'
 import AvatarCropper from '../components/AvatarCropper'
 import SocialLinksEditor from '../components/SocialLinksEditor'
@@ -26,6 +27,23 @@ export default function ProfilePage() {
   const [passwordStatus, setPasswordStatus] = useState<Status>(null)
   const [showAvatarCropper, setShowAvatarCropper] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [appInfo, setAppInfo] = useState<AppInfo | null>(null)
+  const [pushStatus, setPushStatus] = useState<Status>(null)
+  const [sendingTest, setSendingTest] = useState(false)
+
+  // The native-only cards below are hidden in the browser; the imports stay
+  // lazy so a web build never loads a Capacitor plugin.
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      if (!(await isNativeApp()) || cancelled) return
+      const info = await getAppInfo()
+      if (!cancelled) setAppInfo(info)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (user) {
@@ -120,6 +138,28 @@ export default function ProfilePage() {
     setShowAvatarCropper(false)
   }
 
+  const handleTestPush = async () => {
+    setSendingTest(true)
+    setPushStatus(null)
+    try {
+      const { devices, configured } = (await devicesAPI.test()).data
+      if (!configured) {
+        setPushStatus({ kind: 'error', text: t('profile.pushNotConfigured') })
+      } else if (devices === 0) {
+        setPushStatus({ kind: 'error', text: t('profile.pushNoDevices') })
+      } else {
+        setPushStatus({
+          kind: 'success',
+          text: t('profile.pushSent', { count: devices }),
+        })
+      }
+    } catch (err) {
+      setPushStatus({ kind: 'error', text: apiErrorMessage(err, t('profile.pushFailed')) })
+    } finally {
+      setSendingTest(false)
+    }
+  }
+
   if (!user) {
     return <div className="profile-loading">{t('profile.loading')}</div>
   }
@@ -199,6 +239,32 @@ export default function ProfilePage() {
           </button>
         </form>
       </div>
+
+      {appInfo && (
+        <div className="profile-card">
+          <div className="profile-form">
+            <h4>{t('profile.pushSection')}</h4>
+            <p className="profile-hint">{t('profile.pushHint')}</p>
+            {pushStatus && (
+              <div className={`form-message ${pushStatus.kind}`}>{pushStatus.text}</div>
+            )}
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handleTestPush}
+              disabled={sendingTest}
+            >
+              {sendingTest ? t('profile.pushSending') : t('profile.pushTest')}
+            </button>
+            <div className="profile-device-info">
+              <span>{t('profile.appVersion')}</span>
+              <span>
+                {appInfo.version} ({appInfo.build})
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="profile-card">
         <form onSubmit={handlePasswordSubmit} className="profile-form">

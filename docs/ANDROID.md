@@ -282,3 +282,27 @@ Before the first push, `git status --ignored` was checked to confirm all of the
 above were excluded, and the staged tree was grepped for connection strings,
 private keys, `AIza` API keys and `service_account` blobs: zero hits outside
 the documentation and templates.
+
+## 12. Device checklist
+
+Run this on a physical phone after installing a build. It takes five minutes
+and proves the whole chain without reading any source.
+
+1. **Install.** Install the APK. The first screen is the app, not a blank page.
+2. **Sign in.** Sign in as an administrator.
+3. **Token row.** Approve the notification permission prompt. The token is
+   now registered; the Profile screen shows the app version under
+   *Notifications on this device*.
+4. **Test push.** Tap **Send test notification** in Profile. It reports
+   `sent to N`, and the notification arrives.
+   - `0 devices registered` means no token is stored yet — reopen the app,
+     accept the permission prompt, and try again.
+   - `Push is not configured on the server` means `FCM_SERVICE_ACCOUNT_JSON`
+     is unset on the API.
+5. **Tap route.** Tap the notification. The app opens the screen it points at,
+   the row is marked read in the bell, and the app stays in the foreground.
+6. **Sign out.** Sign out. The device row is removed, and the test button
+   reports `0 devices registered` for the next account.
+7. **Second account.** Sign in as a regular user and repeat steps 3–5. That
+   account receives only its own notifications — send an administrator message
+   to confirm.

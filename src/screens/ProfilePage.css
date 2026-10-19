@@ -8,6 +8,7 @@
 .profile-avatar-buttons{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .profile-form{display:flex;flex-direction:column;gap:16px}
 .profile-form .form-group{display:flex;flex-direction:column;gap:4px}
+.profile-device-info{display:flex;justify-content:space-between;gap:12px;font-size:.85rem;color:#6b7280;border-top:1px solid #e5e7eb;padding-top:16px}
 .profile-loading{text-align:center;padding:60px 20px;color:#6b7280}
 
 /* ---- Dark theme: diametrically opposite tones ---- */
@@ -15,4 +16,5 @@
 [data-theme="dark"] .profile-card{background:#1f2937;box-shadow:0 1px 3px #00000066}
 [data-theme="dark"] .profile-hint{color:#9ca3af}
 [data-theme="dark"] .profile-avatar-section{border-bottom-color:#374151}
+[data-theme="dark"] .profile-device-info{color:#9ca3af;border-top-color:#374151}
 [data-theme="dark"] .profile-loading{color:#9ca3af}

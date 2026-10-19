@@ -557,6 +557,17 @@ export const ru: Catalogue = {
   'profile.passwordChanged': 'Пароль изменён. Войдите заново.',
   'profile.passwordFailed': 'Не удалось сменить пароль',
   'profile.signOut': 'Выйти',
+  'profile.device': 'Это устройство',
+  'profile.appVersion': 'Версия приложения',
+  'profile.pushSection': 'Уведомления на этом устройстве',
+  'profile.pushTest': 'Отправить тестовое уведомление',
+  'profile.pushSending': 'Отправка...',
+  'profile.pushSent': 'Отправлено на {count}',
+  'profile.pushNoDevices': 'Устройство ещё не зарегистрировано',
+  'profile.pushNotConfigured': 'Push не настроен на сервере',
+  'profile.pushFailed': 'Не удалось отправить тестовое уведомление',
+  'profile.pushHint':
+    'Тест проверяет доставку с сервера на этот телефон. Если он пришёл, придут и настоящие уведомления о событиях и сообщениях.',
 
   // ---- Сброс пароля ----
   'reset.title': 'Сброс пароля',

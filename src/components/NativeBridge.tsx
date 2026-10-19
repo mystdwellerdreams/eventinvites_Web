@@ -7,6 +7,7 @@ import { devicesAPI, notificationsAPI } from '../utils/api'
 import {
   PUSH_CHANNEL_ID,
   currentPlatform,
+  getAppInfo,
   getStoredPushToken,
   isNativeApp,
   notifyNotificationsChanged,
@@ -94,9 +95,11 @@ export default function NativeBridge() {
         PushNotifications.addListener('registration', async (token) => {
           storePushToken(token.value)
           try {
+            const info = await getAppInfo()
             await devicesAPI.register({
               token: token.value,
               platform: await currentPlatform(),
+              ...(info ? { appVersion: info.version } : {}),
             })
           } catch {
             // Not signed in yet, or offline: the token is retried on sign-in.
@@ -184,7 +187,12 @@ export default function NativeBridge() {
       const stored = getStoredPushToken()
       if (stored) {
         try {
-          await devicesAPI.register({ token: stored, platform: await currentPlatform() })
+          const info = await getAppInfo()
+          await devicesAPI.register({
+            token: stored,
+            platform: await currentPlatform(),
+            ...(info ? { appVersion: info.version } : {}),
+          })
         } catch {
           // Retried by the registration listener once FCM re-issues it.
         }

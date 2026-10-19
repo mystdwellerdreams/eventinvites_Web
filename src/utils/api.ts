@@ -341,6 +341,8 @@ export const devicesAPI = {
     api.post<MessageResponse>('/devices', data),
   unregister: (token: string) =>
     api.delete<MessageResponse>('/devices', { data: { token } }),
+  /** Sends one notification to this account's devices; `devices` is the count. */
+  test: () => api.post<{ devices: number; configured: boolean }>('/devices/test'),
 }
 
 /** The Messages section: feedback, conversations with administrators, and

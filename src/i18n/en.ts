@@ -625,6 +625,17 @@ export const en = {
   'profile.passwordChanged': 'Password changed. Please sign in again.',
   'profile.passwordFailed': 'Could not change password',
   'profile.signOut': 'Sign out',
+  'profile.device': 'This device',
+  'profile.appVersion': 'App version',
+  'profile.pushSection': 'Notifications on this device',
+  'profile.pushTest': 'Send test notification',
+  'profile.pushSending': 'Sending...',
+  'profile.pushSent': 'Sent to {count}',
+  'profile.pushNoDevices': 'No device registered yet',
+  'profile.pushNotConfigured': 'Push is not configured on the server',
+  'profile.pushFailed': 'Could not send the test notification',
+  'profile.pushHint':
+    'The test proves delivery from the server to this phone. If it arrives, real event and message notifications will too.',
 
   // ---- Password reset ----
   'reset.title': 'Reset your password',

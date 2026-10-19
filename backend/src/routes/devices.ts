@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { asyncHandler, AppError } from '../middleware/errorHandler'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { prisma } from '../utils/prisma'
+import { sendPushMessages, isPushConfigured } from '../utils/push'
 
 const router = Router()
 
@@ -45,6 +46,38 @@ router.post(
     })
 
     res.status(201).json({ device })
+  })
+)
+
+/**
+ * Sends one notification to the caller's own devices.
+ *
+ * This is the diagnostic a tester runs after installing the app: a zero count
+ * means no device token has been registered for this account yet, which is the
+ * usual reason a real push never arrives. The message goes through the same
+ * path as every other push, so a delivery here proves the whole chain —
+ * service account, token, channel and app registration.
+ */
+router.post(
+  '/test',
+  authMiddleware,
+  asyncHandler(async (req: AuthRequest, res) => {
+    const devices = await prisma.deviceToken.count({
+      where: { userId: req.user!.id },
+    })
+
+    if (devices > 0) {
+      await sendPushMessages([
+        {
+          userId: req.user!.id,
+          title: 'Event Invites',
+          body: 'Test notification. If you can read this, push works.',
+          data: { kind: 'test' },
+        },
+      ])
+    }
+
+    res.json({ devices, configured: isPushConfigured() })
   })
 )
 
