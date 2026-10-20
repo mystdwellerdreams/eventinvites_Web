@@ -9,8 +9,13 @@
  *
  * Run it with: npm run storage:check --workspace=backend
  */
+import dotenv from 'dotenv'
 import { saveUpload, resolveUpload, deleteUpload, checkStorage } from '../src/utils/storage'
 import type { Express } from 'express'
+
+// The same env files the app reads, so the check talks to the same store the
+// deployment does.
+dotenv.config({ path: ['../.env.local', '.env.local'], quiet: true })
 
 /** A one-pixel PNG, so the round trip exercises the real image path. */
 const PIXEL = Buffer.from(

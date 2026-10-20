@@ -10,7 +10,7 @@ customize events, and registered users sign up for them.
 | Frontend   | React 18, React Router, Vite, TypeScript       |
 | Backend    | Node.js, Express 5, TypeScript, Zod            |
 | Database   | PostgreSQL via Prisma ORM, reached through Hyperdrive or directly |
-| Uploads    | Local disk in development, Neon Object Storage in production |
+| Uploads    | Local disk in development, Vercel Blob in production |
 | Auth       | JWT access + refresh tokens in HttpOnly cookies |
 | Mobile     | Capacitor Android shell (WebView) + FCM push   |
 | Deployment | GitHub Pages for the app, Vercel for the API, Neon for the data |
@@ -472,10 +472,8 @@ migrations, so preview builds need them too):
 | `DATABASE_URL`          | yes      | PostgreSQL connection string                   |
 | `JWT_SECRET`            | yes      | signs access tokens                            |
 | `REFRESH_SECRET`        | yes      | signs refresh tokens                           |
-| `AWS_ENDPOINT_URL_S3`   | yes      | the object store for uploaded images           |
-| `AWS_ACCESS_KEY_ID`     | yes      | the object store's key                         |
-| `AWS_SECRET_ACCESS_KEY` | yes      | the object store's secret                      |
-| `AWS_REGION`            | yes      | the object store's region                      |
+| `BLOB_READ_WRITE_TOKEN` | yes      | the Vercel Blob store for uploaded images       |
+| `BLOB_STORE_ID`         | no       | identifies the store, for reference             |
 | `NEON_STORAGE_BUCKET`   | yes      | the bucket the images live in                  |
 | `TURNSTILE_SECRET_KEY`  | no       | server-side captcha check                      |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | no | inlines the captcha widget                |
@@ -488,9 +486,11 @@ Generate secrets with `openssl rand -base64 32`.
 
 1. **PostgreSQL.** Neon, Supabase or Vercel Postgres. Copy the connection
    string. Strip any surrounding quotes.
-2. **Object storage.** A Neon Object Storage bucket on the same branch as the
-   database, with a key pair. Without it, uploads fall back to the ephemeral
-   filesystem and are lost on the next cold start.
+2. **Object storage.** A Vercel Blob store: create one in the project under
+   Storage, and copy its token. Without it, uploads fall back to the ephemeral
+   filesystem and are lost on the next cold start. An S3-compatible store —
+   Neon Object Storage among them — can be used instead by setting the
+   `AWS_*` variables and leaving `BLOB_READ_WRITE_TOKEN` unset.
 
 ### Cookies and CORS
 
@@ -572,17 +572,18 @@ or point at an empty database.
 | `npm run worker:typecheck` | Type-check the Worker and the API              |
 | `npm run cf:dev-vars`     | Write `.dev.vars` for the local Worker         |
 | `npm run deploy:cloudflare` | The migrations, then the Worker               |
+| `npm run storage:check --workspace=backend` | Write, read and remove one uploaded file |
 
 Uploaded images go to `backend/uploads` in development, served from
-`/uploads`. When the object store is configured they are written to it
-instead, and the database stores the file's path.
+`/uploads`. When an object store is configured they are written to it
+instead, and the database stores the store's own URL.
 
-The store's access level is a property of the bucket rather than of the
-request, so it is stated in the environment instead of being probed. A
-**public** bucket is answered with a redirect from `/uploads/<file>`, so
-browsers fetch the bytes from the store without invoking the Worker. A
-**private** bucket is read with the credentials and served by the Worker,
-which is the only way a private bucket can be read at all. Either way
-`/uploads/<file>` is what the browser requests, so one code path covers disk
-and both kinds of object storage. The `uploads` directory is excluded from
-version control.
+Vercel Blob keeps the access level of the store rather than of the request,
+and the app remembers which one it is talking to, so it does not have to probe
+on every upload. A **public** store is answered with a redirect from
+`/uploads/<file>`, so browsers fetch the bytes from the CDN without invoking
+the API. A **private** store is read with the token and served by the API,
+which is the only way a private store can be read at all. Either way
+`/uploads/<file>` is what the browser requests, so one code path covers the
+disk, Vercel Blob and an S3-compatible store. The `uploads` directory is
+excluded from version control.

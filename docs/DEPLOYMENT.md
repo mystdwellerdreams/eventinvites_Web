@@ -19,7 +19,7 @@ affected by that — it authenticates with a bearer token, never with a cookie.
 | Web app | GitHub Pages | free, or $4/month for a private source repository |
 | API | Vercel Hobby | free, for non-commercial use |
 | Database | Neon | free |
-| Uploads | Neon Object Storage | free |
+| Uploads | Vercel Blob | a small free allowance |
 | Builds | GitHub Actions | free, 2,000 minutes a month |
 
 ---
@@ -29,8 +29,8 @@ affected by that — it authenticates with a bearer token, never with a cookie.
 Both are already in place on the same Neon branch.
 
 - The database is the `production` branch in `ap-southeast-1`.
-- The uploads live in the `eventinvites-storage` bucket on that branch, and
-  are reached with the AWS SDK's own variable names.
+- The uploads live in the Vercel Blob store, and the token that identifies it
+  is the only thing the API needs.
 
 The connection strings are in the repository's `.env.local` (which is
 gitignored) and are also set on the Vercel project.
@@ -70,16 +70,21 @@ applies migrations, so a preview build needs them too.
 | `DIRECT_DATABASE_URL` | no | the direct connection, used for the migrations |
 | `JWT_SECRET` | yes | signs access tokens |
 | `REFRESH_SECRET` | yes | signs refresh tokens |
-| `AWS_ENDPOINT_URL_S3` | yes | the upload store |
-| `AWS_ACCESS_KEY_ID` | yes | the upload store's key |
-| `AWS_SECRET_ACCESS_KEY` | yes | the upload store's secret |
-| `AWS_REGION` | yes | the upload store's region |
-| `NEON_STORAGE_BUCKET` | yes | the bucket the images live in |
-| `NEON_STORAGE_ACCESS` | yes | `private` or `public` |
+| `BLOB_READ_WRITE_TOKEN` | yes | the Vercel Blob store the uploads live in |
+| `BLOB_STORE_ID` | no | identifies the store, for reference |
 | `FRONTEND_URL` | yes | the origins allowed to call the API |
 | `TURNSTILE_SECRET_KEY` | no | enables the real captcha check |
 | `FCM_SERVICE_ACCOUNT_JSON` | no | enables push to the Android app |
 | `CROSS_SITE_AUTH` | no | `false` to keep the cookies `SameSite=Lax` |
+
+The uploads go to **Vercel Blob**. The token identifies the store, so it is
+all the API needs; without it the uploads fall back to a local disk, which a
+serverless host discards between requests.
+
+An S3-compatible store — Neon Object Storage among them — can be used
+instead by setting the `AWS_*` variables and leaving
+`BLOB_READ_WRITE_TOKEN` unset. `STORAGE_BACKEND` picks one explicitly when
+more than one is configured.
 
 `FRONTEND_URL` lists the origins that may call the API:
 
@@ -293,7 +298,7 @@ A healthy deployment answers with:
 {
   "status": "ok",
   "runtime": "serverless",
-  "storage": "object",
+  "storage": "blob",
   "database": "ok",
   "storageReady": "ok",
   "corsOrigins": ["https://<your-site>.github.io", "https://localhost"],
@@ -320,7 +325,7 @@ What each symptom looks like:
 | Value | Symptom |
 | --- | --- |
 | `DATABASE_URL` | the build stops with `DATABASE_URL is not a valid URL` |
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | the upload store does not answer, and the health check says `storageReady: "down"` |
+| `BLOB_READ_WRITE_TOKEN` | the upload store does not answer, and the health check says `storageReady: "down"` |
 | `FRONTEND_URL` | the origins are wrong, so every request is refused by the CORS check |
 
 ### When the storage is down
@@ -334,14 +339,18 @@ beginning `[config]`.
 The usual causes:
 
 - **A value copied with its quotes.** See [above](#a-value-copied-with-its-quotes).
-- **A variable that was never set.** `AWS_ENDPOINT_URL_S3`,
-  `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `NEON_STORAGE_BUCKET` all
-  have to be there. The bucket's name defaults to `eventinvites-storage`.
-- **The wrong key.** The key has to be a Neon access key (`nak_…`) for that
-  bucket. The startup check says so when it does not look like one.
+- **A variable that was never set.** `BLOB_READ_WRITE_TOKEN` has to be there.
+- **The wrong token.** It identifies one store, and it is shown only once, so
+  a store that was recreated has a new one. The startup check prints a
+  fingerprint of it, which is enough to tell two apart without writing the
+  token down.
 
-`AWS_REGION` is not what breaks it — the store answers whatever region the
-signature names — but it is worth setting anyway.
+To see the same diagnosis without a deployment:
+
+```bash
+npm run storage:check --workspace=backend    # writes, reads and removes a file
+npm run storage:describe --workspace=backend  # what the store answers, and how
+```
 
 ## 7. When something fails
 
