@@ -307,6 +307,33 @@ async function describeStore(): Promise<void> {
     console.error(`[config] an unsigned request to the bucket failed: ${(err as Error).message}`)
   }
 
+  // Where the endpoint actually leads. The same name can resolve to different
+  // addresses in different places, and a store on one of them may not be the
+  // store the credentials belong to.
+  try {
+    const { lookup } = await import('node:dns/promises')
+    const host = new URL(s3Endpoint()).hostname
+    const addresses = await lookup(host, { all: true })
+    console.error(
+      `[config] the endpoint resolves to: ${addresses
+        .map((entry) => `${entry.address}/${entry.family}`)
+        .join(', ')}`
+    )
+  } catch (err) {
+    console.error(`[config] the endpoint did not resolve: ${(err as Error).message}`)
+  }
+
+  // Whether anything at all can be reached from here, so that a refusal from
+  // the store can be told apart from a broken network.
+  for (const url of ['https://example.com', `${s3Endpoint()}/`]) {
+    try {
+      const response = await fetch(url, { method: 'GET' })
+      console.error(`[config] a plain request to ${url}: ${response.status}`)
+    } catch (err) {
+      console.error(`[config] a plain request to ${url} failed: ${(err as Error).message}`)
+    }
+  }
+
   // A request signed by hand, with only the host, the payload's hash and the
   // time in the signature. The SDK signs more headers than that, and a service
   // that reconstructs the canonical request from what it received can find one
