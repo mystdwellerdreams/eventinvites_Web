@@ -61,6 +61,15 @@ export interface CaptchaContextValue {
   tokenFor: (action: CaptchaAction) => string | null
   /** Records a verified token for an action. */
   solved: (action: CaptchaAction, token: string) => void
+  /**
+   * Reports that the Cloudflare widget itself failed, so the app's own
+   * challenge takes over.
+   *
+   * The script can load and the widget still fail to render — a WebView is
+   * the usual reason — and an empty token is not a token, so without this the
+   * visitor would be left with a challenge that can never be answered.
+   */
+  widgetFailed: () => void
   /** Forgets an action's token, so the next attempt asks again. */
   clear: (action: CaptchaAction) => void
   /** The overlay currently blocking the screen, if any. */
@@ -93,10 +102,12 @@ const CaptchaContext = createContext<CaptchaContextValue | null>(null)
 function TurnstileWidget({
   siteKey,
   onToken,
+  onFailed,
   theme,
 }: {
   siteKey: string
   onToken: (token: string) => void
+  onFailed: () => void
   theme: 'light' | 'dark'
 }) {
   const holder = useRef<HTMLDivElement>(null)
@@ -105,6 +116,8 @@ function TurnstileWidget({
   // widget, which would restart the challenge.
   const onTokenRef = useRef(onToken)
   onTokenRef.current = onToken
+  const onFailedRef = useRef(onFailed)
+  onFailedRef.current = onFailed
 
   useEffect(() => {
     if (!holder.current || !window.turnstile) return
@@ -114,7 +127,12 @@ function TurnstileWidget({
       size: 'flexible',
       callback: (token) => onTokenRef.current(token),
       'expired-callback': () => onTokenRef.current(''),
-      'error-callback': () => onTokenRef.current(''),
+      'error-callback': () => {
+        onTokenRef.current('')
+        // The widget could not render. An empty token is not a token, so the
+        // app's own challenge has to take over.
+        onFailedRef.current()
+      },
     })
     return () => {
       if (widgetId.current && window.turnstile) {
@@ -307,6 +325,10 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
     setTokens((current) => ({ ...current, [action]: token }))
   }, [])
 
+  // The widget failed rather than the script: the same answer, which is the
+  // app's own challenge.
+  const widgetFailed = useCallback(() => setScriptState('failed'), [])
+
   const clear = useCallback((action: CaptchaAction) => {
     setTokens((current) => {
       if (!(action in current)) return current
@@ -332,12 +354,13 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
       mode,
       tokenFor,
       solved,
+      widgetFailed,
       clear,
       challenge,
       requireChallenge,
       dismissChallenge,
     }),
-    [mode, tokenFor, solved, clear, challenge, requireChallenge, dismissChallenge]
+    [mode, tokenFor, solved, widgetFailed, clear, challenge, requireChallenge, dismissChallenge]
   )
 
   return (
@@ -412,6 +435,8 @@ function TurnstileSlot({
   action: CaptchaAction
   onToken: (action: CaptchaAction, token: string) => void
 }) {
+  const { t } = useI18n()
+  const { mode, solved, widgetFailed } = useCaptcha()
   const siteKey = env('TURNSTILE_SITE_KEY')
   const dark =
     typeof document !== 'undefined' &&
@@ -421,6 +446,7 @@ function TurnstileSlot({
       siteKey={siteKey}
       theme={dark ? 'dark' : 'light'}
       onToken={(token) => onToken(action, token)}
+      onFailed={widgetFailed}
     />
   )
 }
