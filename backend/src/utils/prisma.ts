@@ -17,12 +17,28 @@ import { PrismaClient } from '../generated/prisma/client'
  */
 const requestScope = new AsyncLocalStorage<PrismaClient>()
 
+/**
+ * The timeouts a cold database needs.
+ *
+ * A managed database scales to zero, and the first connection has to wake it.
+ * Prisma's default of five seconds is often not enough, so the timeouts are
+ * added when the connection string does not carry them. Without them the
+ * first request after an idle period fails while the ones after it succeed.
+ */
+function withTimeouts(connectionString: string): string {
+  const [base, query = ''] = connectionString.split('?')
+  const params = new URLSearchParams(query)
+  if (!params.has('connect_timeout')) params.set('connect_timeout', '15')
+  if (!params.has('pool_timeout')) params.set('pool_timeout', '10')
+  return `${base}?${params.toString()}`
+}
+
 /** Builds a client for one request, or for the life of a Node process. */
 export function createPrismaClient(connectionString: string): PrismaClient {
   return new PrismaClient({
     // The `pg` driver makes the connection, so the same client runs on Node
     // and on the Workers runtime, where the engine's own driver cannot.
-    adapter: new PrismaPg({ connectionString }),
+    adapter: new PrismaPg({ connectionString: withTimeouts(connectionString) }),
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
 }

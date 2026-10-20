@@ -66,7 +66,8 @@ applies migrations, so a preview build needs them too.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | yes | the direct Neon connection string |
+| `DATABASE_URL` | yes | the pooled Neon connection string |
+| `DIRECT_DATABASE_URL` | no | the direct connection, used for the migrations |
 | `JWT_SECRET` | yes | signs access tokens |
 | `REFRESH_SECRET` | yes | signs refresh tokens |
 | `AWS_ENDPOINT_URL_S3` | yes | the upload store |
@@ -89,6 +90,43 @@ https://<your-site>.github.io,https://localhost
 The first is the web app. The second is the Android app: its WebView's origin
 is `https://localhost`, and because it sends an `Authorization` header, every
 request is preflighted and the origin has to be allowed.
+
+### The connection string
+
+Use the **pooled** endpoint for the runtime, and give it the timeouts a cold
+database needs:
+
+```
+postgresql://…@ep-<id>-pooler.<region>.aws.neon.tech/neondb?sslmode=require&connect_timeout=15&pool_timeout=10
+```
+
+A managed database scales to zero, and the first connection has to wake it.
+Prisma's default of five seconds is often not enough, and the first request
+after an idle period fails while the ones after it succeed. The migration
+script adds the timeouts if they are missing, and so does the API at runtime,
+but it is better to set them on the variable itself.
+
+Set `DIRECT_DATABASE_URL` to the **direct** endpoint as well:
+
+```
+postgresql://…@ep-<id>.<region>.aws.neon.tech/neondb?sslmode=require&connect_timeout=15&pool_timeout=10
+```
+
+The migrations use it when it is set. A migration wants a connection of its
+own: it holds a Postgres advisory lock and runs DDL in a transaction, and the
+pooled endpoint shares its sessions.
+
+### Deployments and migrations
+
+The build command applies the migrations, and **only on a production
+deployment**. A preview shares the database with production, and Prisma waits
+ten seconds for the migration lock before giving up — so two deployments
+overlapping leave one of them failing with `P1002`. Previews therefore leave
+the database alone. Set `DB_MIGRATE_ON_PREVIEW=1` if a preview ever does need
+to migrate.
+
+If a deployment still loses the race, the script waits and tries again:
+`DB_MIGRATE_ATTEMPTS` (3) and `DB_MIGRATE_RETRY_MS` (15000) control that.
 
 ### The Vercel plan
 
@@ -263,9 +301,12 @@ lists **both** the site and `https://localhost`.
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | The site shows the Pages error page on a deep link | `404.html` was not published | check that the build wrote it, and that Pages serves the branch the workflow published |
+| The build fails with `P1002` | another deployment held the migration lock | the script retries; if it keeps failing, a migration is running by hand |
+| The build fails with `P1002` on every preview | a preview was told to migrate | unset `DB_MIGRATE_ON_PREVIEW` |
 | The site's requests fail in the console | the origin is not allowed | add it to `FRONTEND_URL` |
 | The web app does not stay signed in in Safari | Safari blocks third-party cookies | set `CROSS_SITE_AUTH` to `false` and put the site and the API behind one hostname, or give the web a token-based session |
-| `503` from `/api/health` with `database: down` | the API cannot reach the database | check `DATABASE_URL` on the Vercel project |
+| `503` from `/api/health` with `database: down` | the API cannot reach the database | check `DATABASE_URL` on the Vercel project, and that it has the timeouts |
+| The first request after an idle period fails | the database was scaling to zero | add `connect_timeout=15&pool_timeout=10` to `DATABASE_URL` |
 | The APK will not install over an older one | the `versionCode` did not go up | raise it in `android/app/build.gradle` |
 | The APK is unsigned | no signing key was found | provide `keystore.properties` or the `ANDROID_KEYSTORE_*` variables |
 

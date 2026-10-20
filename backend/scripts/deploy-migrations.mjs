@@ -131,7 +131,13 @@ if (missingTimeouts.length > 0) {
       '',
       '    ...?sslmode=require&connect_timeout=15&pool_timeout=10',
       '',
-      '  Set the same value in Vercel: Project Settings -> Environment Variables.',
+      '  The migration below is given them either way, but the runtime reads',
+      '  DATABASE_URL directly, so the deployed API needs them too. Set the',
+      '  same value in Vercel: Project Settings -> Environment Variables.',
+      '',
+      '  A DIRECT_DATABASE_URL, when set, is used for the migration instead:',
+      '  a migration wants a connection of its own, and the pooled endpoint',
+      '  shares its sessions.',
     ].join('\n')
   )
 }
@@ -212,16 +218,121 @@ if (checkOnly) {
   process.exit(0)
 }
 
-// A single command string avoids Node's deprecation warning about passing an
-// argument array with shell enabled, which also concatenates args unescaped.
-const child = spawn('npx prisma migrate deploy', {
-  stdio: 'inherit',
-  env: { ...process.env, DATABASE_URL: raw },
-  shell: true,
-})
+// A preview deployment must not change the database.
+//
+// It shares it with production, and Prisma holds a Postgres advisory lock for
+// the whole migration run. Every deployment applies migrations at build time,
+// so a preview and a production build that overlap leave one of them waiting
+// for a lock that Prisma gives up on after ten seconds.
+const isPreview = process.env.VERCEL_ENV === 'preview'
+if (isPreview && process.env.DB_MIGRATE_ON_PREVIEW !== '1') {
+  console.log(
+    '  preview deployment: the migrations are not applied, so the database is\n' +
+      '  left as it is. Set DB_MIGRATE_ON_PREVIEW=1 to apply them anyway.'
+  )
+  process.exit(0)
+}
 
-child.on('error', (err) => {
-  console.error(`  Could not start prisma: ${err.message}`)
-  process.exit(1)
-})
-child.on('exit', (code) => process.exit(code ?? 1))
+/**
+ * The connection string to migrate with.
+ *
+ * A migration wants a connection of its own: it holds an advisory lock, runs
+ * DDL in a transaction, and must not share a session with anything else. The
+ * pooled endpoint multiplexes sessions, so a direct connection is preferred
+ * when one is configured.
+ */
+const direct = (process.env.DIRECT_DATABASE_URL ?? '').trim()
+const migrationUrl = direct || raw
+
+if (direct) {
+  const directHost = new URL(direct).hostname
+  if (directHost !== parsed.hostname) {
+    warn(
+      'DIRECT_DATABASE_URL points at a different host than DATABASE_URL.',
+      [
+        `    DATABASE_URL:   ${parsed.hostname}`,
+        `    DIRECT_DATABASE_URL: ${directHost}`,
+        '',
+        '  The migrations will run against the direct host. That is the right',
+        '  host for them, but the two are meant to be the same database.',
+      ].join('\n')
+    )
+  }
+}
+
+/**
+ * The timeouts a cold database needs.
+ *
+ * A managed database scales to zero, and the first connection has to wake it.
+ * Prisma's defaults are too short for that, so the migration is given the
+ * longer ones whether or not the configured string carries them. The runtime
+ * reads DATABASE_URL directly, so it still needs them there.
+ */
+function withMigrationTimeouts(url) {
+  const [base, query = ''] = url.split('?')
+  const params = new URLSearchParams(query)
+  if (!params.has('connect_timeout')) params.set('connect_timeout', '15')
+  if (!params.has('pool_timeout')) params.set('pool_timeout', '10')
+  return `${base}?${params.toString()}`
+}
+
+const migrationTarget = withMigrationTimeouts(migrationUrl)
+
+const MIGRATE_ATTEMPTS = Number(process.env.DB_MIGRATE_ATTEMPTS ?? 3)
+const MIGRATE_RETRY_MS = Number(process.env.DB_MIGRATE_RETRY_MS ?? 15000)
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/** Runs the migration, and says whether it lost a race for the lock. */
+function runMigrate(url) {
+  return new Promise((resolve) => {
+    // A single command string avoids Node's deprecation warning about passing an
+    // argument array with shell enabled, which also concatenates args unescaped.
+    const child = spawn('npx prisma migrate deploy', {
+      stdio: ['inherit', 'inherit', 'pipe'],
+      env: { ...process.env, DATABASE_URL: url },
+      shell: true,
+    })
+
+    let stderr = ''
+    child.stderr?.on('data', (chunk) => {
+      const text = chunk.toString()
+      stderr += text
+      process.stderr.write(text)
+    })
+
+    child.on('error', (err) => {
+      console.error(`  Could not start prisma: ${err.message}`)
+      process.exit(1)
+    })
+    child.on('exit', (code) => {
+      resolve({ code: code ?? 1, lockContended: /P1002|advisory lock/i.test(stderr) })
+    })
+  })
+}
+
+for (let attempt = 1; attempt <= MIGRATE_ATTEMPTS; attempt++) {
+  const { code, lockContended } = await runMigrate(migrationTarget)
+
+  if (code === 0) {
+    process.exit(0)
+  }
+
+  if (lockContended && attempt < MIGRATE_ATTEMPTS) {
+    warn(
+      `another deployment is holding the migration lock (attempt ${attempt} of ${MIGRATE_ATTEMPTS}).`,
+      [
+        '  Prisma waits ten seconds for the lock and then gives up. Something',
+        '  else is migrating right now — a preview build, a production build,',
+        '  or a migration run by hand.',
+        '',
+        `  Waiting ${Math.round(MIGRATE_RETRY_MS / 1000)}s and trying again.`,
+        '  Set DB_MIGRATE_ATTEMPTS and DB_MIGRATE_RETRY_MS to change that.',
+      ].join('\n')
+    )
+    await sleep(MIGRATE_RETRY_MS)
+    continue
+  }
+
+  process.exit(code)
+}
