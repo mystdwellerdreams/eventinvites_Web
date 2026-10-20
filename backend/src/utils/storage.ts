@@ -80,19 +80,33 @@ type S3Module = typeof import('@aws-sdk/client-s3')
 
 /** Lazily imported so a disk or Blob deployment does not load the SDK. */
 let s3Instance: InstanceType<S3Module['S3Client']> | null = null
-async function s3(): Promise<InstanceType<S3Module['S3Client']>> {
+
+/**
+ * The store's client.
+ *
+ * The endpoint is normalised before it is given to the client: a trailing
+ * slash would put a second one in the path the signature covers.
+ */
+async function s3(
+  overrides: Partial<ConstructorParameters<typeof import('@aws-sdk/client-s3')['S3Client']>[0]> = {}
+): Promise<InstanceType<S3Module['S3Client']>> {
+  const { S3Client } = await import('@aws-sdk/client-s3')
+  const config = {
+    endpoint: s3Endpoint(),
+    region: envValue('AWS_REGION') || 'us-east-1',
+    // The bucket is part of the path rather than of the hostname.
+    forcePathStyle: true,
+    credentials: {
+      accessKeyId: envValue('AWS_ACCESS_KEY_ID') as string,
+      secretAccessKey: envValue('AWS_SECRET_ACCESS_KEY') as string,
+    },
+  }
+  // A client with its own handler is a separate client, not the shared one.
+  if (overrides.requestHandler) {
+    return new S3Client({ ...config, ...overrides })
+  }
   if (!s3Instance) {
-    const { S3Client } = await import('@aws-sdk/client-s3')
-    s3Instance = new S3Client({
-      endpoint: envValue('AWS_ENDPOINT_URL_S3'),
-      region: envValue('AWS_REGION') || 'us-east-1',
-      // The bucket is part of the path rather than of the hostname.
-      forcePathStyle: true,
-      credentials: {
-        accessKeyId: envValue('AWS_ACCESS_KEY_ID') as string,
-        secretAccessKey: envValue('AWS_SECRET_ACCESS_KEY') as string,
-      },
-    })
+    s3Instance = new S3Client(config)
   }
   return s3Instance
 }
@@ -193,6 +207,47 @@ function describeRefusal(err: unknown): void {
         ? interesting.map(([name, value]) => `${name}=${value}`).join(' ')
         : 'no identifying headers')
   )
+}
+
+/**
+ * The request as it was signed.
+ *
+ * The signature covers the method, the path, the headers and the time. A
+ * refusal says the store did not agree with one of them, and the parts that
+ * are written down here are the ones that can be compared between a
+ * deployment and a checkout.
+ */
+async function describeSignedRequest(): Promise<void> {
+  if (storeKind() !== 's3') return
+
+  const { NodeHttpHandler } = await import('@smithy/node-http-handler')
+  const inner = new NodeHttpHandler()
+
+  const client = await s3({
+    requestHandler: {
+      handle: async (request: { headers: Record<string, string> }) => {
+        const headers = request.headers ?? {}
+        const authorization = headers['authorization'] ?? headers['Authorization'] ?? ''
+        console.error(
+          `[config] the request signed: host=${headers['host'] ?? headers['Host'] ?? '?'} ` +
+            `date=${headers['x-amz-date'] ?? '?'} ` +
+            `sha256=${(headers['x-amz-content-sha256'] ?? '?').slice(0, 16)} ` +
+            `signedHeaders=${authorization.split('SignedHeaders=')[1]?.split(',').join('+') ?? '?'} ` +
+            `scope=${authorization.split('Credential=')[1]?.split('/').slice(1).join('/') ?? '?'} ` +
+            `sdk=${(headers['x-amz-user-agent'] ?? '?').split(' ')[0]}`
+        )
+        return inner.handle(request as never)
+      },
+    },
+  })
+
+  const { HeadBucketCommand } = await import('@aws-sdk/client-s3')
+  try {
+    await client.send(new HeadBucketCommand({ Bucket: s3Bucket() }))
+  } catch {
+    // The refusal itself is reported elsewhere; this is only here to see how
+    // the request was signed.
+  }
 }
 
 /**
@@ -367,6 +422,7 @@ export async function reportStoreConfiguration(): Promise<void> {
   )
 
   await describeStore()
+  await describeSignedRequest()
 }
 
 /**
