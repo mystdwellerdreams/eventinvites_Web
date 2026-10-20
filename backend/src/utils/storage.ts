@@ -236,7 +236,22 @@ async function describeSignedRequest(): Promise<void> {
             `scope=${authorization.split('Credential=')[1]?.split('/').slice(1).join('/') ?? '?'} ` +
             `sdk=${(headers['x-amz-user-agent'] ?? '?').split(' ')[0]}`
         )
-        return inner.handle(request as never)
+        const result = await inner.handle(request as never)
+        // The service's own explanation, read before the error middleware
+        // tries to make sense of it.
+        const raw = result.response as unknown as {
+          statusCode?: number
+          body?: { transformToString?: () => Promise<string> }
+        }
+        try {
+          const body = await raw.body?.transformToString?.()
+          console.error(
+            `[config] the store answered ${raw.statusCode ?? 'no status'}: ${(body ?? '').slice(0, 300)}`
+          )
+        } catch {
+          console.error(`[config] the store answered ${raw.statusCode ?? 'no status'}: no body`)
+        }
+        return result
       },
     },
   })
