@@ -2,6 +2,7 @@ import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { randomUUID } from 'crypto'
+import { createHash } from 'crypto'
 import { envValue, hasQuotes } from './env'
 
 /**
@@ -285,6 +286,19 @@ export function reportStoreConfiguration(): void {
   if (keyId && !/^nak_/.test(keyId)) {
     console.error('[config] AWS_ACCESS_KEY_ID does not look like a Neon access key.')
   }
+
+  // A fingerprint of the configuration, so that a deployment which cannot
+  // reach the bucket can be compared with the one that can. The key itself is
+  // never written down: only the first few characters of its hash, which are
+  // enough to tell two keys apart and useless without the secret.
+  const fingerprint = (value: string | undefined) =>
+    value ? createHash('sha256').update(value).digest('hex').slice(0, 12) : 'none'
+  console.error(
+    `[config] store: endpoint=${s3Endpoint()} bucket=${s3Bucket()} ` +
+      `region=${envValue('AWS_REGION') || 'us-east-1 (the default)'} ` +
+      `key=${fingerprint(keyId)} secret=${fingerprint(envValue('AWS_SECRET_ACCESS_KEY'))} ` +
+      `keyLength=${keyId?.length ?? 0} secretLength=${envValue('AWS_SECRET_ACCESS_KEY')?.length ?? 0}`
+  )
 }
 
 /**
