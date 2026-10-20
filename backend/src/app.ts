@@ -61,7 +61,7 @@ if (usesLocalDisk()) {
 
 // A misconfiguration is worth saying out loud at startup, because the health
 // check can only report that something did not answer.
-reportStoreConfiguration()
+await reportStoreConfiguration()
 if (!process.env.DATABASE_URL) {
   console.error(
     '[config] DATABASE_URL is not set, so the database cannot be reached. ' +

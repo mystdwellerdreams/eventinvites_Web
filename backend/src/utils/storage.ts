@@ -168,7 +168,73 @@ export async function checkStorage(): Promise<boolean> {
     // The reason is logged, because a store that cannot be reached is the one
     // thing an operator cannot work out from a failed health check alone.
     console.error('The upload store did not answer:', err)
+    describeRefusal(err)
     return false
+  }
+}
+
+/**
+ * What the store said in its own words.
+ *
+ * A refusal carries headers that say where it came from: an S3-compatible
+ * service sends `x-amz-request-id`, and anything else does not. The body is
+ * the service's explanation, so the first of it is worth having.
+ */
+function describeRefusal(err: unknown): void {
+  const meta = (err as { $metadata?: { httpHeaders?: Record<string, string>; httpStatusCode?: number } })
+    .$metadata
+  const headers = meta?.httpHeaders ?? {}
+  const interesting = Object.entries(headers).filter(
+    ([name]) => name.startsWith('x-amz') || name === 'server' || name === 'content-type'
+  )
+  console.error(
+    `[config] the store refused with ${meta?.httpStatusCode ?? 'no status'}: ` +
+      (interesting.length
+        ? interesting.map(([name, value]) => `${name}=${value}`).join(' ')
+        : 'no identifying headers')
+  )
+}
+
+/**
+ * Tries the store a few ways and says which of them work.
+ *
+ * A refusal on its own does not say what is wrong: a wrong secret and a
+ * request that never reached the store look the same from the outside. What
+ * does say is which operations succeed, so a few of them are tried and the
+ * results written down.
+ */
+async function describeStore(): Promise<void> {
+  if (storeKind() !== 's3') return
+
+  const { HeadBucketCommand, ListObjectsV2Command, GetBucketLocationCommand } = await import(
+    '@aws-sdk/client-s3'
+  )
+  const client = await s3()
+
+  const operations: [string, () => Promise<unknown>][] = [
+    ['HeadBucket', () => client.send(new HeadBucketCommand({ Bucket: s3Bucket() }))],
+    ['GetBucketLocation', () => client.send(new GetBucketLocationCommand({ Bucket: s3Bucket() }))],
+    ['ListObjectsV2', () => client.send(new ListObjectsV2Command({ Bucket: s3Bucket(), MaxKeys: 1 }))],
+  ]
+
+  for (const [name, run] of operations) {
+    try {
+      await run()
+      console.error(`[config] ${name}: ok`)
+    } catch (err) {
+      const status = (err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode
+      console.error(`[config] ${name}: refused with ${status ?? 'no status'}`)
+    }
+  }
+
+  // An unsigned request says whether the host and the path are right at all:
+  // a store that is reachable answers with its own refusal, and anything else
+  // answers with something that is not the store.
+  try {
+    const response = await fetch(`${s3Endpoint()}/${s3Bucket()}`)
+    console.error(`[config] an unsigned request to the bucket: ${response.status}`)
+  } catch (err) {
+    console.error(`[config] an unsigned request to the bucket failed: ${(err as Error).message}`)
   }
 }
 
@@ -248,7 +314,7 @@ async function resolveDiskUpload(filename: string): Promise<ResolvedUpload | nul
  * environment variable takes the value itself, not the quoted form the local
  * .env files use.
  */
-export function reportStoreConfiguration(): void {
+export async function reportStoreConfiguration(): Promise<void> {
   if (storeKind() !== 's3') {
     // A serverless host has no disk to fall back to, so a store that was
     // never configured leaves the uploads with nowhere to go.
@@ -299,6 +365,8 @@ export function reportStoreConfiguration(): void {
       `key=${fingerprint(keyId)} secret=${fingerprint(envValue('AWS_SECRET_ACCESS_KEY'))} ` +
       `keyLength=${keyId?.length ?? 0} secretLength=${envValue('AWS_SECRET_ACCESS_KEY')?.length ?? 0}`
   )
+
+  await describeStore()
 }
 
 /**

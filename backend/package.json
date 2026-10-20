@@ -17,6 +17,7 @@
         "db:seed": "tsx prisma/seed.ts",
         "db:studio": "prisma studio",
         "storage:check": "tsx scripts/check-storage.ts",
+    "storage:describe": "tsx scripts/describe-store.ts",
     "db:check-transactions": "tsx scripts/check-transactions.ts",
         "postinstall": "prisma generate"
     },
