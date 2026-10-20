@@ -34,13 +34,14 @@ const lines = [
   `DATABASE_URL="${databaseUrl}"`,
   `JWT_SECRET="${values.get('JWT_SECRET') ?? ''}"`,
   `REFRESH_SECRET="${values.get('REFRESH_SECRET') ?? ''}"`,
+  `BLOB_READ_WRITE_TOKEN="${values.get('BLOB_READ_WRITE_TOKEN') ?? ''}"`,
   `AWS_ENDPOINT_URL_S3="${values.get('AWS_ENDPOINT_URL_S3') ?? ''}"`,
   `AWS_ACCESS_KEY_ID="${values.get('AWS_ACCESS_KEY_ID') ?? ''}"`,
   `AWS_SECRET_ACCESS_KEY="${values.get('AWS_SECRET_ACCESS_KEY') ?? ''}"`,
   `AWS_REGION="${values.get('AWS_REGION') ?? ''}"`,
   `NEON_STORAGE_BUCKET="${values.get('NEON_STORAGE_BUCKET') ?? ''}"`,
   `NEON_STORAGE_ACCESS="${values.get('NEON_STORAGE_ACCESS') ?? ''}"`,
-  `STORAGE_BACKEND="${values.get('STORAGE_BACKEND') ?? 's3'}"`,
+  `STORAGE_BACKEND="${values.get('STORAGE_BACKEND') ?? 'blob'}"`,
   '',
 ]
 
