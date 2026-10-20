@@ -519,8 +519,9 @@ or point at an empty database.
 | ------------------------- | ---------------------------------------------- |
 | `npm run dev`             | Next.js app and API (pages + `/api`)           |
 | `npm run dev:backend`     | Express API on its own, with reload            |
-| `npm run build`           | Production build of the Next.js app            |
-| `npm start`               | Run the production build                       |
+| `npm run build`           | The Prisma client and the web app for the Worker |
+| `npm run build:next`      | Production build of the Next.js app            |
+| `npm start`               | Run the Next.js build                          |
 | `npm run lint`            | Lint the Next.js app                           |
 | `npm run db:generate`     | Generate the Prisma client                     |
 | `npm run db:migrate`      | Create a new migration                         |
@@ -543,7 +544,7 @@ or point at an empty database.
 | `npm run worker:check`    | Check a running Worker the way the app uses it  |
 | `npm run worker:typecheck` | Type-check the Worker and the API              |
 | `npm run cf:dev-vars`     | Write `.dev.vars` for the local Worker         |
-| `npm run deploy:cloudflare` | Build the web app and deploy the Worker       |
+| `npm run deploy:cloudflare` | The migrations, then the Worker               |
 
 Uploaded images go to `backend/uploads` in development, served from
 `/uploads`. When the object store is configured they are written to it

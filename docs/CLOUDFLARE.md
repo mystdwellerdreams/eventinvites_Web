@@ -116,13 +116,41 @@ budget.
 
 ## Deploying
 
+### With Cloudflare's own build
+
+Cloudflare can build and deploy the Worker from the repository. Two settings
+matter, in **Workers Builds**:
+
+| Setting | Value | Why |
+| ------- | ----- | --- |
+| Build command | `npm run build` | Generates the Prisma client and builds the web app into `web/dist/`, which the Worker serves as its static assets |
+| Deploy command | `npm run deploy:cloudflare` | Applies the migrations, then uploads the Worker and its assets |
+
+The deploy command matters: a Worker that meets a schema it does not expect
+answers every request with an error, so the migration goes first.
+
+### From a terminal
+
 ```bash
-npm run deploy:cloudflare
+npm run build            # the Prisma client and the web assets
+npm run deploy:cloudflare   # the migrations, then the Worker
 ```
 
-That builds the web app and uploads the Worker. The Worker is also deployed
-by GitHub Actions on every push to `main`, which runs the migrations first so
-the Worker never meets a schema it does not expect.
+### With GitHub Actions
+
+The workflow in `.github/workflows/deploy-worker.yml` does the same on every
+push to `main`: it type-checks, builds, applies the migrations and deploys.
+It needs four repository secrets:
+
+| Secret | What it is |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | An API token with the Workers and Hyperdrive permissions |
+| `CLOUDFLARE_ACCOUNT_ID` | The account the Worker is published to |
+| `DATABASE_URL` | The direct Neon connection string, for the migrations |
+| `VITE_TURNSTILE_SITE_KEY` | The site's captcha key, baked into the web bundle |
+
+The Worker's own secrets are set once with `wrangler secret put` and are not
+read by the workflow.
 
 ## Working on it locally
 
@@ -149,18 +177,6 @@ To check a local Worker the way the app uses it:
 ```bash
 npm run worker:check
 ```
-
-## The GitHub secrets the workflow needs
-
-| Secret | What it is |
-| --- | --- |
-| `CLOUDFLARE_API_TOKEN` | An API token with the Workers and Hyperdrive permissions |
-| `CLOUDFLARE_ACCOUNT_ID` | The account the Worker is published to |
-| `DATABASE_URL` | The direct Neon connection string, for the migrations |
-| `VITE_TURNSTILE_SITE_KEY` | The site's captcha key, baked into the web bundle |
-
-The Worker's own secrets are set once with `wrangler secret put` and are not
-read by the workflow.
 
 ## Notes
 
