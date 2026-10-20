@@ -276,7 +276,7 @@ base64 -w0 android/event-invites-release.jks
 ## 6. Checking a deployment
 
 ```bash
-curl https://eventinvites-api.vercel.app/api/health
+curl https://<your-api>.vercel.app/api/health
 ```
 
 A healthy deployment answers with:
@@ -284,7 +284,7 @@ A healthy deployment answers with:
 ```json
 {
   "status": "ok",
-  "runtime": "node",
+  "runtime": "serverless",
   "storage": "object",
   "database": "ok",
   "storageReady": "ok",
@@ -296,6 +296,28 @@ A healthy deployment answers with:
 Check three things: `database` and `storageReady` are `ok`, and `corsOrigins`
 lists **both** the site and `https://localhost`.
 
+### When the storage is down
+
+`storageReady: "down"` means the upload store did not answer, and the health
+response cannot say why. The reason is in the **function's log** in the
+Vercel dashboard, under the message `The upload store did not answer:`. The
+API also says at startup what is wrong with the configuration, in lines
+beginning `[config]`.
+
+The usual causes:
+
+- **A value copied with its quotes.** The local `.env.local` quotes its
+  values; a deployment's environment variable takes the value itself. A
+  quoted key or secret fails as `Resolved credential object is not valid`.
+- **A variable that was never set.** `AWS_ENDPOINT_URL_S3`,
+  `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `NEON_STORAGE_BUCKET` all
+  have to be there. The bucket's name defaults to `eventinvites-storage`.
+- **The wrong key.** The key has to be a Neon access key (`nak_…`) for that
+  bucket. The startup check says so when it does not look like one.
+
+`AWS_REGION` is not what breaks it — the store answers whatever region the
+signature names — but it is worth setting anyway.
+
 ## 7. When something fails
 
 | Symptom | Cause | Fix |
@@ -306,6 +328,7 @@ lists **both** the site and `https://localhost`.
 | The site's requests fail in the console | the origin is not allowed | add it to `FRONTEND_URL` |
 | The web app does not stay signed in in Safari | Safari blocks third-party cookies | set `CROSS_SITE_AUTH` to `false` and put the site and the API behind one hostname, or give the web a token-based session |
 | `503` from `/api/health` with `database: down` | the API cannot reach the database | check `DATABASE_URL` on the Vercel project, and that it has the timeouts |
+| `503` from `/api/health` with `storageReady: down` | the upload store did not answer | the reason is in the function's log; see [When the storage is down](#when-the-storage-is-down) |
 | The first request after an idle period fails | the database was scaling to zero | add `connect_timeout=15&pool_timeout=10` to `DATABASE_URL` |
 | The APK will not install over an older one | the `versionCode` did not go up | raise it in `android/app/build.gradle` |
 | The APK is unsigned | no signing key was found | provide `keystore.properties` or the `ANDROID_KEYSTORE_*` variables |

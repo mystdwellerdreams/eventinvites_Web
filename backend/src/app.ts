@@ -26,7 +26,7 @@ import {
   publicRouter as bannerPublicRoutes,
   adminRouter as bannerAdminRoutes,
 } from './routes/banners'
-import { UPLOAD_ROUTE, ensureUploadDir, resolveUpload, checkStorage, usesLocalDisk, storeName } from './utils/storage'
+import { UPLOAD_ROUTE, ensureUploadDir, resolveUpload, checkStorage, usesLocalDisk, storeName, reportStoreConfiguration } from './utils/storage'
 import { allowedOrigins, isCrossSiteDeployment } from './utils/cookies'
 
 /**
@@ -57,6 +57,21 @@ function runtimeName(): string {
 // created.
 if (usesLocalDisk()) {
   ensureUploadDir()
+}
+
+// A misconfiguration is worth saying out loud at startup, because the health
+// check can only report that something did not answer.
+reportStoreConfiguration()
+if (!process.env.DATABASE_URL) {
+  console.error(
+    '[config] DATABASE_URL is not set, so the database cannot be reached. ' +
+      'Set it in the deployment\'s environment variables.'
+  )
+} else if (/^["'].*["']$/.test(process.env.DATABASE_URL)) {
+  console.error(
+    "[config] DATABASE_URL is wrapped in quotes. A deployment's environment " +
+      'variable takes the value itself, not the quoted form.'
+  )
 }
 
 app.set('trust proxy', 1)

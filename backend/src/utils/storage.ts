@@ -45,6 +45,16 @@ const BLOB_PREFIX = 'uploads'
  */
 const s3Bucket = () => process.env.NEON_STORAGE_BUCKET || 'eventinvites-storage'
 
+/**
+ * Whether the app is running somewhere the filesystem is not its own.
+ *
+ * The disk store is for development. On Vercel, on the Workers runtime and
+ * anywhere else that discards the filesystem between requests, uploads need
+ * an object store.
+ */
+const isServerlessHost = () =>
+  Boolean(process.env.VERCEL || process.env.VERCEL_ENV || process.env.APP_RUNTIME === 'workers')
+
 const s3Access = (): 'public' | 'private' =>
   process.env.NEON_STORAGE_ACCESS === 'public' ? 'public' : 'private'
 
@@ -107,11 +117,28 @@ export function usesLocalDisk(): boolean {
   return storeKind() === 'disk'
 }
 
+/**
+ * Creates the local upload directory, where there is one to create.
+ *
+ * It must not throw. On a serverless host the filesystem is read-only, and a
+ * store that was never configured leaves the deployment on the disk path: the
+ * directory cannot be made there, and an exception at startup would take the
+ * whole API down over a missing configuration. The uploads fail with a clear
+ * message instead, and the rest of the API keeps answering.
+ */
 export function ensureUploadDir(): void {
-  if (usesLocalDisk()) {
+  if (!usesLocalDisk()) return
+  try {
     if (!fs.existsSync(UPLOAD_DIR)) {
       fs.mkdirSync(UPLOAD_DIR, { recursive: true })
     }
+  } catch (err) {
+    console.error(
+      `[config] The upload directory could not be created at ${UPLOAD_DIR}. ` +
+        'On a serverless host the filesystem is read-only, so the uploads need ' +
+        'an object store: set AWS_ENDPOINT_URL_S3 and the rest of the storage ' +
+        `variables. (${(err as Error).message})`
+    )
   }
 }
 
@@ -207,6 +234,54 @@ async function resolveDiskUpload(filename: string): Promise<ResolvedUpload | nul
     body,
     contentType: contentTypeFor(filename),
     size: body.byteLength,
+  }
+}
+
+/**
+ * Says out loud what is wrong with the store's configuration.
+ *
+ * The health check can only report that the store did not answer. The log is
+ * where the reason is, and the usual causes are a variable that was never set
+ * and a value that was copied with its quotes still around — a dashboard's
+ * environment variable takes the value itself, not the quoted form the local
+ * .env files use.
+ */
+export function reportStoreConfiguration(): void {
+  if (storeKind() !== 's3') {
+    // A serverless host has no disk to fall back to, so a store that was
+    // never configured leaves the uploads with nowhere to go.
+    if (isServerlessHost()) {
+      console.error(
+        '[config] No upload store is configured, so the uploads have nowhere ' +
+          'to go. Set AWS_ENDPOINT_URL_S3, AWS_ACCESS_KEY_ID, ' +
+          'AWS_SECRET_ACCESS_KEY and NEON_STORAGE_BUCKET.'
+      )
+    }
+    return
+  }
+
+  const values: Record<string, string | undefined> = {
+    AWS_ENDPOINT_URL_S3: process.env.AWS_ENDPOINT_URL_S3,
+    AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
+    AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
+    AWS_REGION: process.env.AWS_REGION,
+    NEON_STORAGE_BUCKET: process.env.NEON_STORAGE_BUCKET,
+  }
+
+  for (const [name, value] of Object.entries(values)) {
+    if (!value) {
+      console.error(`[config] ${name} is not set, so the upload store cannot be reached.`)
+      continue
+    }
+    if (/^["'].*["']$/.test(value)) {
+      console.error(
+        `[config] ${name} is wrapped in quotes. A deployment's environment variable takes the value itself, not the quoted form.`
+      )
+    }
+  }
+
+  if (process.env.AWS_ACCESS_KEY_ID && !/^nak_/.test(process.env.AWS_ACCESS_KEY_ID)) {
+    console.error('[config] AWS_ACCESS_KEY_ID does not look like a Neon access key.')
   }
 }
 
