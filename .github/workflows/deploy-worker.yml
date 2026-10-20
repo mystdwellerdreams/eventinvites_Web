@@ -23,6 +23,9 @@ jobs:
       # The direct connection to the database, for the migrations. The Worker
       # itself reaches the database through Hyperdrive, which cannot run them.
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # The Hyperdrive config's identifier. It is a resource id rather than a
+      # secret, so it may be a repository variable instead.
+      CLOUDFLARE_HYPERDRIVE_ID: ${{ vars.CLOUDFLARE_HYPERDRIVE_ID || secrets.CLOUDFLARE_HYPERDRIVE_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -42,6 +45,9 @@ jobs:
 
       - name: Apply the database migrations
         run: npm run db:deploy
+
+      - name: Name the Hyperdrive config
+        run: npm run cf:hyperdrive-id
 
       - name: Deploy the Worker
         uses: cloudflare/wrangler-action@v3

@@ -48,8 +48,12 @@ npx wrangler hyperdrive create eventinvites \
   --connection-string="postgresql://USER:PASSWORD@ep-xxx-pooler.REGION.aws.neon.tech/neondb?sslmode=require"
 ```
 
-The command prints an identifier. Put it in `wrangler.jsonc`, where the
-binding still has its placeholder:
+The command prints an identifier, which is what the deploy needs. There are
+two ways to give it to it.
+
+**Commit it.** The identifier is a resource id, not a secret, so it belongs in
+the repository. Put it in `wrangler.jsonc`, where the binding still has its
+placeholder:
 
 ```jsonc
 "hyperdrive": [
@@ -60,9 +64,24 @@ binding still has its placeholder:
 ]
 ```
 
-The identifier is a resource id, not a secret, so it belongs in the
-repository. The connection string holds a password, so it does not: a local
-run reads it from the environment instead (see below).
+**Or let the build set it.** Leave the placeholder and give the build the
+identifier as a setting named `CLOUDFLARE_HYPERDRIVE_ID`. The deploy fills
+the placeholder in before it uploads, so nothing has to be committed. On
+Cloudflare's own build it is a build variable; on GitHub Actions it is a
+repository variable or secret of the same name.
+
+> **Without an identifier the deploy stops here**, with
+> `Invalid hyperdrive database ID ... It must be a valid UUID`. That is the
+> only thing between the repository and a running Worker.
+
+**Or leave Hyperdrive out entirely.** Removing the `hyperdrive` block from
+`wrangler.jsonc` makes the Worker reach the database with the
+`DATABASE_URL` secret instead. It works, but every request opens its own
+connection, so the answers are slow and the database sees more connections
+than it should. It is worth doing only to ship something quickly.
+
+The connection string holds a password, so it does not belong in the
+repository: a local run reads it from the environment instead (see below).
 
 ### 3. The Worker's secrets
 

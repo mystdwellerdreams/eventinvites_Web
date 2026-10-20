@@ -36,7 +36,8 @@
         "worker:typecheck": "tsc --noEmit -p worker/tsconfig.json",
         "worker:check": "node scripts/check-worker.mjs",
         "cf:dev-vars": "node scripts/write-dev-vars.mjs",
-        "deploy:cloudflare": "npm run db:deploy && npm run worker:deploy"
+        "cf:hyperdrive-id": "node scripts/write-hyperdrive-id.mjs",
+        "deploy:cloudflare": "npm run db:deploy && npm run cf:hyperdrive-id && npm run worker:deploy"
     },
     "dependencies": {
         "@capacitor/android": "^8.5.3",
