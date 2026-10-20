@@ -323,17 +323,6 @@ async function describeStore(): Promise<void> {
     console.error(`[config] the endpoint did not resolve: ${(err as Error).message}`)
   }
 
-  // Whether anything at all can be reached from here, so that a refusal from
-  // the store can be told apart from a broken network.
-  for (const url of ['https://example.com', `${s3Endpoint()}/`]) {
-    try {
-      const response = await fetch(url, { method: 'GET' })
-      console.error(`[config] a plain request to ${url}: ${response.status}`)
-    } catch (err) {
-      console.error(`[config] a plain request to ${url} failed: ${(err as Error).message}`)
-    }
-  }
-
   // A request signed by hand, with only the host, the payload's hash and the
   // time in the signature. The SDK signs more headers than that, and a service
   // that reconstructs the canonical request from what it received can find one
