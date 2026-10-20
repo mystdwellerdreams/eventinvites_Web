@@ -306,6 +306,26 @@ async function describeStore(): Promise<void> {
   } catch (err) {
     console.error(`[config] an unsigned request to the bucket failed: ${(err as Error).message}`)
   }
+
+  // A request signed by hand, with only the host, the payload's hash and the
+  // time in the signature. The SDK signs more headers than that, and a service
+  // that reconstructs the canonical request from what it received can find one
+  // of them missing and refuse the signature without saying why.
+  try {
+    const { signRequest } = await import('./s3sign')
+    const signed = signRequest({
+      method: 'HEAD',
+      endpoint: s3Endpoint(),
+      bucket: s3Bucket(),
+      keyId: envValue('AWS_ACCESS_KEY_ID') as string,
+      secret: envValue('AWS_SECRET_ACCESS_KEY') as string,
+      region: envValue('AWS_REGION'),
+    })
+    const response = await fetch(signed.url, { method: 'HEAD', headers: signed.headers })
+    console.error(`[config] a hand-signed request: ${response.status}`)
+  } catch (err) {
+    console.error(`[config] a hand-signed request failed: ${(err as Error).message}`)
+  }
 }
 
 export interface SavedUpload {
