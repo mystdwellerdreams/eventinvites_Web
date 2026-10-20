@@ -2,6 +2,7 @@ import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { randomUUID } from 'crypto'
+import { envValue, hasQuotes } from './env'
 
 /**
  * The directory this module lives in.
@@ -43,7 +44,7 @@ const BLOB_PREFIX = 'uploads'
  * public bucket answers the browser itself, a private one is read with the
  * credentials and handed on by this app.
  */
-const s3Bucket = () => process.env.NEON_STORAGE_BUCKET || 'eventinvites-storage'
+const s3Bucket = () => envValue('NEON_STORAGE_BUCKET') || 'eventinvites-storage'
 
 /**
  * Whether the app is running somewhere the filesystem is not its own.
@@ -53,20 +54,20 @@ const s3Bucket = () => process.env.NEON_STORAGE_BUCKET || 'eventinvites-storage'
  * an object store.
  */
 const isServerlessHost = () =>
-  Boolean(process.env.VERCEL || process.env.VERCEL_ENV || process.env.APP_RUNTIME === 'workers')
+  Boolean(envValue('VERCEL') || envValue('VERCEL_ENV') || envValue('APP_RUNTIME') === 'workers')
 
 const s3Access = (): 'public' | 'private' =>
-  process.env.NEON_STORAGE_ACCESS === 'public' ? 'public' : 'private'
+  envValue('NEON_STORAGE_ACCESS') === 'public' ? 'public' : 'private'
 
 const s3Configured = () =>
   Boolean(
-    process.env.AWS_ENDPOINT_URL_S3 &&
-      process.env.AWS_ACCESS_KEY_ID &&
-      process.env.AWS_SECRET_ACCESS_KEY
+    envValue('AWS_ENDPOINT_URL_S3') &&
+      envValue('AWS_ACCESS_KEY_ID') &&
+      envValue('AWS_SECRET_ACCESS_KEY')
   )
 
 /** The S3 endpoint without a trailing slash, which the URL builders need. */
-const s3Endpoint = () => (process.env.AWS_ENDPOINT_URL_S3 || '').replace(/\/+$/, '')
+const s3Endpoint = () => (envValue('AWS_ENDPOINT_URL_S3') || '').replace(/\/+$/, '')
 
 /** Where a public bucket serves an object from. */
 const s3PublicUrl = (key: string) => `${s3Endpoint()}/${s3Bucket()}/${key}`
@@ -82,13 +83,13 @@ async function s3(): Promise<InstanceType<S3Module['S3Client']>> {
   if (!s3Instance) {
     const { S3Client } = await import('@aws-sdk/client-s3')
     s3Instance = new S3Client({
-      endpoint: process.env.AWS_ENDPOINT_URL_S3,
-      region: process.env.AWS_REGION || 'us-east-1',
+      endpoint: envValue('AWS_ENDPOINT_URL_S3'),
+      region: envValue('AWS_REGION') || 'us-east-1',
       // The bucket is part of the path rather than of the hostname.
       forcePathStyle: true,
       credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+        accessKeyId: envValue('AWS_ACCESS_KEY_ID') as string,
+        secretAccessKey: envValue('AWS_SECRET_ACCESS_KEY') as string,
       },
     })
   }
@@ -101,7 +102,7 @@ async function s3(): Promise<InstanceType<S3Module['S3Client']>> {
  * credentials of the store it actually uses.
  */
 function storeKind(): 'disk' | 's3' {
-  const forced = process.env.STORAGE_BACKEND
+  const forced = envValue('STORAGE_BACKEND')
   if (forced === 'disk' || forced === 's3') return forced
   if (s3Configured()) return 's3'
   return 'disk'
@@ -260,27 +261,28 @@ export function reportStoreConfiguration(): void {
     return
   }
 
-  const values: Record<string, string | undefined> = {
-    AWS_ENDPOINT_URL_S3: process.env.AWS_ENDPOINT_URL_S3,
-    AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
-    AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
-    AWS_REGION: process.env.AWS_REGION,
-    NEON_STORAGE_BUCKET: process.env.NEON_STORAGE_BUCKET,
-  }
+  const names = [
+    'AWS_ENDPOINT_URL_S3',
+    'AWS_ACCESS_KEY_ID',
+    'AWS_SECRET_ACCESS_KEY',
+    'AWS_REGION',
+    'NEON_STORAGE_BUCKET',
+  ]
 
-  for (const [name, value] of Object.entries(values)) {
-    if (!value) {
+  for (const name of names) {
+    if (!envValue(name)) {
       console.error(`[config] ${name} is not set, so the upload store cannot be reached.`)
       continue
     }
-    if (/^["'].*["']$/.test(value)) {
+    if (hasQuotes(name)) {
       console.error(
-        `[config] ${name} is wrapped in quotes. A deployment's environment variable takes the value itself, not the quoted form.`
+        `[config] ${name} is wrapped in quotes. A deployment's environment variable takes the value itself, not the quoted form; the quotes are stripped here, but it is worth fixing.`
       )
     }
   }
 
-  if (process.env.AWS_ACCESS_KEY_ID && !/^nak_/.test(process.env.AWS_ACCESS_KEY_ID)) {
+  const keyId = envValue('AWS_ACCESS_KEY_ID')
+  if (keyId && !/^nak_/.test(keyId)) {
     console.error('[config] AWS_ACCESS_KEY_ID does not look like a Neon access key.')
   }
 }

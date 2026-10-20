@@ -1,6 +1,7 @@
 import { createSign } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { prisma } from './prisma'
+import { envValue } from './env'
 
 /**
  * Delivers push notifications to the Android app through Firebase Cloud
@@ -69,29 +70,28 @@ function readAccount(): ServiceAccount | null {
   if (account !== undefined) return account
 
   const inline =
-    process.env.FCM_SERVICE_ACCOUNT_JSON ||
-    process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+    envValue('FCM_SERVICE_ACCOUNT_JSON') || envValue('FIREBASE_SERVICE_ACCOUNT_JSON')
 
   let parsed: Record<string, unknown> | null = null
 
   if (inline) {
     parsed = parseJson(inline)
-  } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  } else if (envValue('GOOGLE_APPLICATION_CREDENTIALS')) {
     try {
-      parsed = JSON.parse(readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, 'utf8'))
+      parsed = JSON.parse(readFileSync(envValue('GOOGLE_APPLICATION_CREDENTIALS') as string, 'utf8'))
     } catch (err) {
       console.error('[push] could not read GOOGLE_APPLICATION_CREDENTIALS', err)
     }
-  } else if (process.env.FCM_CLIENT_EMAIL && process.env.FCM_PRIVATE_KEY) {
+  } else if (envValue('FCM_CLIENT_EMAIL') && envValue('FCM_PRIVATE_KEY')) {
     parsed = {
-      project_id: process.env.FCM_PROJECT_ID,
-      client_email: process.env.FCM_CLIENT_EMAIL,
-      private_key: process.env.FCM_PRIVATE_KEY,
+      project_id: envValue('FCM_PROJECT_ID'),
+      client_email: envValue('FCM_CLIENT_EMAIL'),
+      private_key: envValue('FCM_PRIVATE_KEY'),
     }
   }
 
   const projectId =
-    process.env.FCM_PROJECT_ID ||
+    envValue('FCM_PROJECT_ID') ||
     (typeof parsed?.project_id === 'string' ? parsed.project_id : undefined)
   const clientEmail =
     typeof parsed?.client_email === 'string' ? parsed.client_email : undefined
@@ -103,7 +103,7 @@ function readAccount(): ServiceAccount | null {
       ? { projectId, clientEmail, privateKey: privateKey.replace(/\\n/g, '\n') }
       : null
 
-  if (account === null && (inline || process.env.FCM_PROJECT_ID)) {
+  if (account === null && (inline || envValue('FCM_PROJECT_ID'))) {
     console.warn(
       '[push] FCM configuration is incomplete. Push notifications are disabled.'
     )

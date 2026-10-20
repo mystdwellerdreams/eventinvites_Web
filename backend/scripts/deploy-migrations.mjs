@@ -17,6 +17,22 @@ loadEnv({ path: ['../.env.local', '.env.local'], quiet: true })
 
 const LOCAL_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '::1', '[::1]']
 
+/**
+ * A value as the deployment gave it.
+ *
+ * A connection string copied out of a .env file arrives with its quotes still
+ * around, because that is how the local files are written — and a string that
+ * begins with a quote is not a URL at all. The quotes are taken off here, so
+ * a value pasted from the local files works wherever it is set.
+ */
+function unquote(value) {
+  const trimmed = value.trim()
+  if (trimmed.length >= 2 && /^["'].*["']$/.test(trimmed)) {
+    return trimmed.slice(1, -1).trim()
+  }
+  return trimmed
+}
+
 function fail(message, detail) {
   console.error(`\n  Migration preflight failed: ${message}\n`)
   if (detail) console.error(detail)
@@ -28,7 +44,7 @@ function warn(message, detail) {
   if (detail) console.warn(detail)
 }
 
-const raw = process.env.DATABASE_URL
+const raw = process.env.DATABASE_URL ? unquote(process.env.DATABASE_URL) : undefined
 
 if (!raw || !raw.trim()) {
   fail(
@@ -190,7 +206,7 @@ function probe(url) {
  * the fallback. It gives a session of its own in session mode, which is
  * enough.
  */
-const direct = (process.env.DIRECT_DATABASE_URL ?? '').trim()
+const direct = process.env.DIRECT_DATABASE_URL ? unquote(process.env.DIRECT_DATABASE_URL) : ''
 const candidates = [...new Set([direct, raw].filter(Boolean))]
 
 let reachable = null

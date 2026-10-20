@@ -1,4 +1,5 @@
 import type { CookieOptions } from 'express'
+import { envValue } from './env'
 
 /**
  * Origins the API is allowed to serve credentials to.
@@ -8,7 +9,7 @@ import type { CookieOptions } from 'express'
  * is unset no CORS headers are emitted at all.
  */
 export function allowedOrigins(): string[] {
-  const configured = (process.env.FRONTEND_URL ?? '')
+  const configured = (envValue('FRONTEND_URL') ?? '')
     .split(',')
     .map((value) => value.trim().replace(/\/$/, ''))
     .filter(Boolean)
@@ -25,12 +26,12 @@ export function allowedOrigins(): string[] {
  * browsers only accept such cookies over HTTPS.
  */
 export function isCrossSiteDeployment(): boolean {
-  const override = process.env.COOKIE_SAME_SITE?.toLowerCase()
+  const override = envValue('COOKIE_SAME_SITE')?.toLowerCase()
   if (override === 'none' || override === 'lax' || override === 'strict') {
     return override === 'none'
   }
-  if (process.env.CROSS_SITE_AUTH === 'true') return true
-  if (process.env.CROSS_SITE_AUTH === 'false') return false
+  if (envValue('CROSS_SITE_AUTH') === 'true') return true
+  if (envValue('CROSS_SITE_AUTH') === 'false') return false
   return process.env.NODE_ENV === 'production' && allowedOrigins().length > 0
 }
 

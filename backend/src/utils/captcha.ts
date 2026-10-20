@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import type { Request, Response, NextFunction } from 'express'
 import { AppError } from '../middleware/errorHandler'
+import { envValue } from './env'
 
 /** Where Cloudflare answers a Turnstile token. */
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
@@ -27,12 +28,12 @@ export interface CaptchaResult {
  * passes through with a warning rather than locking everyone out.
  */
 export function captchaEnabled(): boolean {
-  return Boolean(process.env.TURNSTILE_SECRET_KEY)
+  return Boolean(envValue('TURNSTILE_SECRET_KEY'))
 }
 
 /** The signing key for this app's own fallback tokens. */
 function fallbackSecret(): string {
-  return process.env.CAPTCHA_SECRET || process.env.JWT_SECRET || 'insecure-development-only'
+  return envValue('CAPTCHA_SECRET') || envValue('JWT_SECRET') || 'insecure-development-only'
 }
 
 /** Signs `payload` so a fallback token cannot be forged by the client. */
@@ -65,7 +66,7 @@ export async function verifyCaptcha(
     return { ok, reasons: ok ? [] : ['fallback-token-invalid'] }
   }
 
-  const secret = process.env.TURNSTILE_SECRET_KEY
+  const secret = envValue('TURNSTILE_SECRET_KEY')
   if (!secret) {
     if (!warnedAboutMissingSecret) {
       warnedAboutMissingSecret = true

@@ -304,6 +304,25 @@ A healthy deployment answers with:
 Check three things: `database` and `storageReady` are `ok`, and `corsOrigins`
 lists **both** the site and `https://localhost`.
 
+### A value copied with its quotes
+
+The local `.env.local` quotes its values, because that is how `.env` files are
+written. **A deployment's environment variable takes the value itself**, so a
+value copied straight out of the local file arrives wrapped in quotes — and a
+string that begins with a quote is not a URL and not a key.
+
+The quotes are stripped wherever the API reads the environment, so a value
+pasted from the local files works, but it is worth fixing: the API says so at
+startup, in a line beginning `[config]`.
+
+What each symptom looks like:
+
+| Value | Symptom |
+| --- | --- |
+| `DATABASE_URL` | the build stops with `DATABASE_URL is not a valid URL` |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | the upload store does not answer, and the health check says `storageReady: "down"` |
+| `FRONTEND_URL` | the origins are wrong, so every request is refused by the CORS check |
+
 ### When the storage is down
 
 `storageReady: "down"` means the upload store did not answer, and the health
@@ -314,9 +333,7 @@ beginning `[config]`.
 
 The usual causes:
 
-- **A value copied with its quotes.** The local `.env.local` quotes its
-  values; a deployment's environment variable takes the value itself. A
-  quoted key or secret fails as `Resolved credential object is not valid`.
+- **A value copied with its quotes.** See [above](#a-value-copied-with-its-quotes).
 - **A variable that was never set.** `AWS_ENDPOINT_URL_S3`,
   `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `NEON_STORAGE_BUCKET` all
   have to be there. The bucket's name defaults to `eventinvites-storage`.

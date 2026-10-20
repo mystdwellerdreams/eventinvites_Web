@@ -3,10 +3,11 @@ import jwt from 'jsonwebtoken'
 import { randomUUID } from 'crypto'
 import { prisma } from '../utils/prisma'
 import { DEFAULT_ROLE, atLeast, getRole } from '../utils/roles'
+import { envValue } from '../utils/env'
 import { ApiRequest } from '../types'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production'
-const REFRESH_SECRET = process.env.REFRESH_SECRET || 'your-super-secret-refresh-key-change-in-production'
+const JWT_SECRET = envValue('JWT_SECRET') || 'your-super-secret-jwt-key-change-in-production'
+const REFRESH_SECRET = envValue('REFRESH_SECRET') || 'your-super-secret-refresh-key-change-in-production'
 
 export interface AuthUser {
   id: string
