@@ -352,6 +352,13 @@ npm run storage:check --workspace=backend    # writes, reads and removes a file
 npm run storage:describe --workspace=backend  # what the store answers, and how
 ```
 
+And to check a deployment the way the app uses it — the captcha, a sign-in, an
+upload and the image coming back:
+
+```bash
+npm run check:deployed --workspace=backend
+```
+
 ## 7. When something fails
 
 | Symptom | Cause | Fix |

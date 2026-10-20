@@ -16,8 +16,10 @@
         "db:check": "node scripts/deploy-migrations.mjs --check",
         "db:seed": "tsx prisma/seed.ts",
         "db:studio": "prisma studio",
-        "storage:check": "tsx scripts/check-storage.ts",
-        "storage:describe": "tsx scripts/describe-store.ts",
+    "storage:check": "tsx scripts/check-storage.ts",
+    "storage:describe": "tsx scripts/describe-store.ts",
+    "storage:list": "tsx scripts/list-blob-store.ts",
+    "check:deployed": "tsx scripts/check-deployed-upload.ts",
         "db:check-transactions": "tsx scripts/check-transactions.ts",
         "postinstall": "prisma generate"
     },
