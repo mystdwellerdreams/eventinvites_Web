@@ -1,0 +1,38 @@
+name: Deploy the API
+
+# The Express application, deployed to Vercel.
+#
+# The build command is in vercel.json: it generates the Prisma client, applies
+# the migrations, and builds the serverless entry that serves the API.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deployment at a time, and the migration in the build must not run
+# against a database another deployment is already changing.
+concurrency:
+  group: api-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Deploy
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-args: --prod --yes
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}

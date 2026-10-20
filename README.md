@@ -9,11 +9,11 @@ customize events, and registered users sign up for them.
 | ---------- | ---------------------------------------------- |
 | Frontend   | React 18, React Router, Vite, TypeScript       |
 | Backend    | Node.js, Express 5, TypeScript, Zod            |
-| Database   | PostgreSQL via Prisma ORM, reached through Hyperdrive |
+| Database   | PostgreSQL via Prisma ORM, reached through Hyperdrive or directly |
 | Uploads    | Local disk in development, Neon Object Storage in production |
 | Auth       | JWT access + refresh tokens in HttpOnly cookies |
 | Mobile     | Capacitor Android shell (WebView) + FCM push   |
-| Deployment | Cloudflare Workers: the API and the web app from one origin |
+| Deployment | GitHub Pages for the app, Vercel for the API, Neon for the data |
 
 ## Getting started
 
@@ -394,37 +394,61 @@ The three pieces that make push work:
 payload reference and troubleshooting. Push needs no changes to the web
 deployment: with `FCM_SERVICE_ACCOUNT_JSON` unset the push layer is a no-op.
 
-## Deploying to Cloudflare
+## Deploying
 
-The application runs as **one Cloudflare Worker**. The Worker serves the API
-and the web app from the same origin, so the browser's calls are same-origin
-and the auth cookies are ordinary first-party ones.
+The application is four pieces, on four hosts:
 
-[`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md) has the step-by-step setup: the
-Hyperdrive connection, the Worker's secrets, the local development loop and
-the GitHub secrets the deploy workflow needs.
+```
+GitHub Pages          the single-page app
+Vercel                the API
+Neon                  the database and the uploads
+GitHub Actions        the builds and the deploys
+```
 
-| Setting        | Value                                                        |
-| -------------- | ------------------------------------------------------------ |
-| Worker name    | `eventinvites` → `eventinvites.<account>.workers.dev`         |
-| Build          | `npm run web:build`, then `wrangler deploy`                   |
-| Static assets  | `web/dist`, with a single-page fallback for deep links       |
-| Database       | Neon PostgreSQL through a Hyperdrive binding                  |
-| Uploads        | Neon Object Storage, in the bucket on the same Neon branch   |
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) has the step-by-step: the Vercel
+project and its environment variables, the GitHub Pages repository and its
+variables, the Android release key, and the secrets the workflows need.
 
-The API and the web app share an origin, so `FRONTEND_URL` only has to list
-the origins that come from somewhere else: the Android app's `https://localhost`
-WebView is one of them.
+| Part | Where | Cost |
+| ---- | ----- | ---- |
+| Web app | GitHub Pages | free, or $4/month for a private source repository |
+| API | Vercel Hobby | free, for non-commercial use |
+| Database and uploads | Neon | free |
+| Builds | GitHub Actions | free |
+
+The app and the API are on different hosts, so the browser's calls are
+cross-origin: the API answers with CORS headers for the site's origin, and
+the session is a cookie marked `SameSite=None`. **The Android app is not
+affected by that** — it authenticates with a bearer token and never uses a
+cookie, so it keeps working in every browser.
 
 Two things are worth knowing before deploying:
 
-- **The Workers Free plan is not enough.** It allows ten milliseconds of CPU
-  per request, and hashing a password with bcrypt takes longer. The paid plan
-  starts at five dollars a month.
-- **The Prisma client is created per request.** The Workers runtime does not
-  let a socket opened during one request be used by another, so a client held
-  at module level answers the first request and hangs the second.
-  `backend/src/utils/prisma.ts` puts the request's own client in scope instead.
+- **GitHub Pages is free for public repositories only.** For a private one it
+  needs GitHub Pro, or the site has to be published from a separate public
+  repository. The source can stay private either way.
+- **Vercel's Hobby plan is for non-commercial use.** Asking for donations
+  does not count; taking payments does.
+
+The build writes a copy of the app as `404.html`, because GitHub Pages has no
+single-page fallback and would otherwise answer a deep link such as
+`/events/key/abc` with its own error page. To see it behave that way locally:
+
+```bash
+npm run web:build
+npm run web:preview   # serves web/dist the way GitHub Pages does
+npm run web:check     # checks that the deep links reach the app
+```
+
+### The other target
+
+The Cloudflare Worker deployment is still in the repository and still works:
+`worker/` holds the entry, `wrangler.jsonc` the configuration, and
+`npm run deploy:cloudflare` deploys it. It serves the API and the web app
+from one origin, which avoids the cross-site cookies entirely, but it costs
+$5 a month for the paid plan — the free plan's ten milliseconds of CPU per
+request is less than the password hashing alone takes. See
+[`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md).
 
 ## Deploying to Vercel
 
@@ -538,7 +562,10 @@ or point at an empty database.
 | `npm run android:open`    | Open `android/` in Android Studio              |
 | `npm run android:run`     | Install and run on a connected device/emulator |
 | `npm run android:build`   | Build an APK or AAB from the Android project   |
-| `npm run web:build`       | Bundle `src/` into `web/dist/` for the Worker   |
+| `npm run web:build`       | Bundle `src/` into `web/dist/` for the site    |
+| `npm run web:preview`     | Serve `web/dist` the way GitHub Pages does     |
+| `npm run web:check`       | Check that the deep links reach the app         |
+| `npm run android:apk`     | Build the signed release APK                   |
 | `npm run worker:dev`      | The Worker on :8787, with the app and the API   |
 | `npm run worker:deploy`   | Deploy the Worker                              |
 | `npm run worker:check`    | Check a running Worker the way the app uses it  |

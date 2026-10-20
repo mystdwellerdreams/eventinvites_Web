@@ -63,9 +63,17 @@ if (!container) {
   throw new Error('The root element is missing from index.html')
 }
 
+/**
+ * The path the site is published under.
+ *
+ * A site at the root of its host has none, and the router's default is
+ * right. A project published under a subpath — a GitHub Pages project site —
+ * has one, and the router has to be told so that it does not read the
+ * repository's name as part of the route.
+ */
 createRoot(container).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={__ROUTER_BASENAME__ || undefined}>
       <Providers>
         <ScrollManager />
         <App />

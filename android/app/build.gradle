@@ -16,8 +16,44 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    /**
+     * Signing for a release build.
+     *
+     * The key is never in the repository. It is read from
+     * android/keystore.properties when that file exists — which is how a
+     * developer signs locally — and from the environment otherwise, which is
+     * how the build workflow signs an APK it has no key store for.
+     *
+     * Without either, the release build is left unsigned: Gradle produces an
+     * APK that cannot be installed, which is a clearer failure than one
+     * signed with the debug key.
+     */
+    signingConfigs {
+        release {
+            def signing = new Properties()
+            def propertiesFile = rootProject.file("keystore.properties")
+            if (propertiesFile.exists()) {
+                propertiesFile.withInputStream { signing.load(it) }
+            }
+            def store = signing.getProperty("storeFile") ?: System.getenv("ANDROID_KEYSTORE_FILE")
+            def storePassword = signing.getProperty("storePassword") ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            def keyAlias = signing.getProperty("keyAlias") ?: System.getenv("ANDROID_KEY_ALIAS")
+            def keyPassword = signing.getProperty("keyPassword") ?: System.getenv("ANDROID_KEY_PASSWORD")
+            if (store && storePassword && keyAlias && keyPassword) {
+                storeFile file(store)
+                storePassword storePassword
+                keyAlias keyAlias
+                keyPassword keyPassword
+            }
+        }
+    }
     buildTypes {
         release {
+            if (signingConfigs.release.storeFile != null) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.lifecycle("No release signing key found, so the APK will be unsigned. Provide android/keystore.properties or the ANDROID_KEYSTORE_* environment variables.")
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

@@ -1,0 +1,65 @@
+name: Deploy the web app
+
+# The single-page app, published to GitHub Pages.
+#
+# The repository's settings have to say "GitHub Actions" under
+# Settings -> Pages -> Build and deployment -> Source, for the deploy step to
+# be allowed to publish.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. A second push while the first is running waits
+# rather than racing it.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # The API's origin, baked into the bundle. The app and the API are on
+      # different hosts, so it has to be absolute.
+      VITE_API_BASE: ${{ vars.VITE_API_BASE }}
+      # The captcha's site key. It is public by design, so a repository
+      # variable is enough.
+      VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
+      # Where the site is published. A user site is at the root; a project
+      # site lives under the repository's name.
+      PAGES_BASE: ${{ vars.PAGES_BASE }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run web:build
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish
+        id: deployment
+        uses: actions/deploy-pages@v4

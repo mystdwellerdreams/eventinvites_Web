@@ -15,6 +15,9 @@ const repoRoot = dirname(fileURLToPath(import.meta.url))
 const srcDir = resolve(repoRoot, 'src')
 const navigationFacade = resolve(srcDir, 'utils/navigation.router.tsx')
 
+/** The repository root, which is where the env files live. */
+export { repoRoot }
+
 export const sharedConfig: UserConfig = {
   root: resolve(repoRoot, 'mobile/app'),
   // The app's own assets (the logo) live in the repository's public/.

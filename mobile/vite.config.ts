@@ -14,6 +14,11 @@ const mobileDir = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   ...sharedConfig,
+  define: {
+    // The WebView serves the app from the root of its own origin, so the
+    // router needs no basename.
+    __ROUTER_BASENAME__: JSON.stringify(''),
+  },
   build: {
     outDir: resolve(mobileDir, 'www'),
     emptyOutDir: true,
