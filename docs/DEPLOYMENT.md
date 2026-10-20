@@ -116,6 +116,14 @@ The migrations use it when it is set. A migration wants a connection of its
 own: it holds a Postgres advisory lock and runs DDL in a transaction, and the
 pooled endpoint shares its sessions.
 
+**The direct endpoint is not reachable from everywhere.** Neon serves it over
+IPv6, and a build container with no IPv6 route cannot get to it — even though
+a TLS handshake still answers, so a reachability probe does not catch it. The
+migration script therefore falls back to the pooled endpoint when the
+migration reports that the database could not be reached, and says so. If the
+build keeps failing with `P1001`, removing `DIRECT_DATABASE_URL` is the
+quickest way to confirm it.
+
 ### Deployments and migrations
 
 The build command applies the migrations, and **only on a production

@@ -146,35 +146,79 @@ if (missingTimeouts.length > 0) {
 // wake it. Probing first turns that into a clear message instead of a build
 // that appears to hang on the datasource line.
 const PROBE_TIMEOUT_MS = Number(process.env.DB_PROBE_TIMEOUT_MS ?? 25000)
-const port = Number(parsed.port || 5432)
 
-const reachable = await new Promise((resolve) => {
-  const socket = net.connect({ host: parsed.hostname, port })
-  let settled = false
-  const finish = (ok, why) => {
-    if (settled) return
-    settled = true
-    try {
-      socket.destroy()
-    } catch {
-      // Already closed.
+/** Opens a TCP connection and upgrades it to TLS, to see whether a host answers. */
+function probe(url) {
+  const host = new URL(url).hostname
+  const port = Number(new URL(url).port || 5432)
+  return new Promise((resolve) => {
+    const socket = net.connect({ host, port })
+    let settled = false
+    const finish = (ok, why) => {
+      if (settled) return
+      settled = true
+      try {
+        socket.destroy()
+      } catch {
+        // Already closed.
+      }
+      resolve({ ok, why, host, port })
     }
-    resolve({ ok, why })
-  }
-  socket.setTimeout(PROBE_TIMEOUT_MS)
-  socket.on('timeout', () => finish(false, 'timed out'))
-  socket.on('error', (err) => finish(false, err.code || err.message))
-  socket.on('secureConnect', () => finish(true, 'tls'))
-  socket.on('connect', () => {
-    // Managed Postgres expects TLS; upgrade to confirm the handshake works.
-    const secured = tls.connect(
-      { socket, servername: parsed.hostname, rejectUnauthorized: false },
-      () => finish(true, 'tls')
-    )
-    secured.on('error', (err) => finish(false, `tls: ${err.code || err.message}`))
-    secured.setTimeout(PROBE_TIMEOUT_MS)
+    socket.setTimeout(PROBE_TIMEOUT_MS)
+    socket.on('timeout', () => finish(false, 'timed out'))
+    socket.on('error', (err) => finish(false, err.code || err.message))
+    socket.on('secureConnect', () => finish(true, 'tls'))
+    socket.on('connect', () => {
+      // Managed Postgres expects TLS; upgrade to confirm the handshake works.
+      const secured = tls.connect(
+        { socket, servername: host, rejectUnauthorized: false },
+        () => finish(true, 'tls')
+      )
+      secured.on('error', (err) => finish(false, `tls: ${err.code || err.message}`))
+      secured.setTimeout(PROBE_TIMEOUT_MS)
+    })
   })
-})
+}
+
+/**
+ * The connection strings to try, in order.
+ *
+ * A migration wants a connection of its own, so a direct endpoint is
+ * preferred: the pooled one shares its sessions. But the direct endpoint is
+ * not reachable from everywhere — Neon serves it over IPv6, and a build
+ * container with no IPv6 route cannot get to it — so the pooled endpoint is
+ * the fallback. It gives a session of its own in session mode, which is
+ * enough.
+ */
+const direct = (process.env.DIRECT_DATABASE_URL ?? '').trim()
+const candidates = [...new Set([direct, raw].filter(Boolean))]
+
+let reachable = null
+let target = raw
+for (const candidate of candidates) {
+  const attempt = await probe(candidate)
+  if (attempt.ok) {
+    reachable = attempt
+    target = candidate
+    break
+  }
+  if (candidate !== raw) {
+    warn(
+      `the direct database at ${attempt.host} did not answer (${attempt.why}), so the pooled one is used instead.`,
+      [
+        '  The direct endpoint is not reachable from everywhere, and the',
+        '  migrations work on the pooled endpoint in session mode, which gives',
+        '  a session of its own.',
+        '',
+        '  To use the direct one, make sure the build host can reach it.',
+      ].join('\n')
+    )
+  } else {
+    reachable = attempt
+  }
+}
+
+const { port } = reachable
 
 if (!reachable.ok) {
   const timedOut = reachable.why === 'timed out'
@@ -211,7 +255,9 @@ if (!reachable.ok) {
 // the same diagnosis can be run locally in seconds instead of a build.
 const checkOnly = process.argv.includes('--check') || process.env.DB_CHECK_ONLY === '1'
 
-console.log('  database reachable (TLS ok)')
+console.log(
+  `  database reachable (TLS ok) -> ${new URL(target).hostname}:${new URL(target).port || 5432}`
+)
 
 if (checkOnly) {
   console.log('  --check passed; migrations were not applied.')
@@ -234,33 +280,6 @@ if (isPreview && process.env.DB_MIGRATE_ON_PREVIEW !== '1') {
 }
 
 /**
- * The connection string to migrate with.
- *
- * A migration wants a connection of its own: it holds an advisory lock, runs
- * DDL in a transaction, and must not share a session with anything else. The
- * pooled endpoint multiplexes sessions, so a direct connection is preferred
- * when one is configured.
- */
-const direct = (process.env.DIRECT_DATABASE_URL ?? '').trim()
-const migrationUrl = direct || raw
-
-if (direct) {
-  const directHost = new URL(direct).hostname
-  if (directHost !== parsed.hostname) {
-    warn(
-      'DIRECT_DATABASE_URL points at a different host than DATABASE_URL.',
-      [
-        `    DATABASE_URL:   ${parsed.hostname}`,
-        `    DIRECT_DATABASE_URL: ${directHost}`,
-        '',
-        '  The migrations will run against the direct host. That is the right',
-        '  host for them, but the two are meant to be the same database.',
-      ].join('\n')
-    )
-  }
-}
-
-/**
  * The timeouts a cold database needs.
  *
  * A managed database scales to zero, and the first connection has to wake it.
@@ -276,14 +295,12 @@ function withMigrationTimeouts(url) {
   return `${base}?${params.toString()}`
 }
 
-const migrationTarget = withMigrationTimeouts(migrationUrl)
-
 const MIGRATE_ATTEMPTS = Number(process.env.DB_MIGRATE_ATTEMPTS ?? 3)
 const MIGRATE_RETRY_MS = Number(process.env.DB_MIGRATE_RETRY_MS ?? 15000)
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-/** Runs the migration, and says whether it lost a race for the lock. */
+/** Runs the migration, and says what went wrong. */
 function runMigrate(url) {
   return new Promise((resolve) => {
     // A single command string avoids Node's deprecation warning about passing an
@@ -306,16 +323,50 @@ function runMigrate(url) {
       process.exit(1)
     })
     child.on('exit', (code) => {
-      resolve({ code: code ?? 1, lockContended: /P1002|advisory lock/i.test(stderr) })
+      resolve({
+        code: code ?? 1,
+        lockContended: /P1002|advisory lock/i.test(stderr),
+        // The database could not be reached at all, rather than refusing
+        // what it was asked to do.
+        unreachable: /P1001|Can't reach database server/i.test(stderr),
+      })
     })
   })
 }
 
+// The endpoint to try next, and the one to fall back to.
+const preferred = withMigrationTimeouts(target)
+const fallback = withMigrationTimeouts(raw)
+let current = preferred
+let usedFallback = false
+
 for (let attempt = 1; attempt <= MIGRATE_ATTEMPTS; attempt++) {
-  const { code, lockContended } = await runMigrate(migrationTarget)
+  const { code, lockContended, unreachable } = await runMigrate(current)
 
   if (code === 0) {
     process.exit(0)
+  }
+
+  // A direct endpoint that the build host cannot reach is the usual reason
+  // for this. The pooled endpoint gives a session of its own in session mode,
+  // which is enough for a migration, so the run carries on with it.
+  if (unreachable && current !== fallback) {
+    warn(
+      'the database could not be reached, so the pooled endpoint is used instead.',
+      [
+        '  The direct endpoint is not reachable from every host — Neon serves',
+        '  it over IPv6, and a build container with no IPv6 route cannot get',
+        '  to it — even though a TLS handshake still answers.',
+        '',
+        '  The pooled endpoint answers over IPv4 and gives a session of its own,',
+        '  which is what a migration needs.',
+        '',
+        '  To use the direct one, make sure the build host can reach it.',
+      ].join('\n')
+    )
+    current = fallback
+    usedFallback = true
+    continue
   }
 
   if (lockContended && attempt < MIGRATE_ATTEMPTS) {
@@ -332,6 +383,16 @@ for (let attempt = 1; attempt <= MIGRATE_ATTEMPTS; attempt++) {
     )
     await sleep(MIGRATE_RETRY_MS)
     continue
+  }
+
+  if (usedFallback && unreachable) {
+    fail('the database could not be reached on either endpoint.', [
+      `    direct:  ${new URL(preferred).hostname}`,
+      `    pooled:  ${new URL(fallback).hostname}`,
+      '',
+      '  Both were tried. Check that the database is running and that the',
+      '  connection string points at it.',
+    ].join('\n'))
   }
 
   process.exit(code)
