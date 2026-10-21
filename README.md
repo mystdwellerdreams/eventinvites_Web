@@ -370,7 +370,7 @@ place of it.
 
 ```bash
 npm run app:build                     # bundle src/ → mobile/www/
-VITE_API_BASE=https://eventinvites.mystdwellerdreams.workers.dev/api npm run app:build
+VITE_API_BASE=https://kolymafiaclub.vercel.app/api npm run app:build
 npm run android:sync                  # cap sync, copies www into android/
 npm run android:open                  # Android Studio: select a device, press Run
 ```
