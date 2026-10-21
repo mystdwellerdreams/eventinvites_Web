@@ -68,11 +68,15 @@ assert(verified.body?.token, `the captcha answered ${JSON.stringify(verified.bod
 // The sign-in, keeping the session cookie the way a browser would.
 const signIn = await fetch(`${BASE}/api/auth/login`, {
   method: 'POST',
-  headers: { 'content-type': 'application/json' },
+  headers: {
+    'content-type': 'application/json',
+    // The verified challenge travels in a header, not in the body: the same
+    // call has to work for JSON and for multipart uploads.
+    'x-captcha-token': verified.body.token,
+  },
   body: JSON.stringify({
     identifier: 'admin@example.com',
     password: 'Admin',
-    captchaToken: verified.body.token,
   }),
 })
 assert(signIn.ok, `the sign-in answered ${signIn.status}: ${(await signIn.text()).slice(0, 200)}`)

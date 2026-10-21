@@ -11,10 +11,17 @@
 export type EnvName = 'API_BASE' | 'TURNSTILE_SITE_KEY'
 
 export function env(name: EnvName): string {
+  // Next inlines `process.env.NEXT_PUBLIC_*` when it sees the name written
+  // out, so the two are spelled out here rather than looked up by a computed
+  // name. A computed lookup is not inlined, and in the browser there is no
+  // `process` to read it from — the value would simply go missing, and with
+  // it the captcha's site key.
   const next =
-    typeof process !== 'undefined'
-      ? (process.env as Record<string, string | undefined>)[`NEXT_PUBLIC_${name}`]
-      : undefined
+    typeof process === 'undefined'
+      ? undefined
+      : name === 'TURNSTILE_SITE_KEY'
+        ? process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+        : process.env.NEXT_PUBLIC_API_BASE
   if (next) return next
 
   const vite = (import.meta as ImportMeta & { env?: Record<string, string> }).env
