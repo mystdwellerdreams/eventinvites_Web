@@ -51,6 +51,17 @@ declare global {
 /** How long the script may take before the fallback takes over. */
 const SCRIPT_TIMEOUT_MS = 8000
 
+/**
+ * How long the widget may take to answer before the app's own challenge
+ * takes over.
+ *
+ * A widget that cannot be used — its hostname is not allowed, the script is
+ * half blocked, the connection to the provider is gone — can sit there
+ * without answering and without saying why. The form would then wait for a
+ * token that is never coming, and the visitor could not sign in at all.
+ */
+const WIDGET_TIMEOUT_MS = 20000
+
 const TURNSTILE_SCRIPT = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
 
 /** What a consumer of the provider needs to know. */
@@ -121,13 +132,27 @@ function TurnstileWidget({
 
   useEffect(() => {
     if (!holder.current || !window.turnstile) return
+    let answered = false
+    const timer = window.setTimeout(() => {
+      // The widget was rendered but never answered. Nobody is going to get a
+      // token out of it, so the app's own challenge takes over rather than
+      // leaving the form waiting for one.
+      if (!answered) onFailedRef.current()
+    }, WIDGET_TIMEOUT_MS)
     widgetId.current = window.turnstile.render(holder.current, {
       sitekey: siteKey,
       theme,
       size: 'flexible',
-      callback: (token) => onTokenRef.current(token),
-      'expired-callback': () => onTokenRef.current(''),
+      callback: (token) => {
+        answered = true
+        onTokenRef.current(token)
+      },
+      'expired-callback': () => {
+        answered = true
+        onTokenRef.current('')
+      },
       'error-callback': () => {
+        answered = true
         onTokenRef.current('')
         // The widget could not render. An empty token is not a token, so the
         // app's own challenge has to take over.
@@ -135,6 +160,7 @@ function TurnstileWidget({
       },
     })
     return () => {
+      window.clearTimeout(timer)
       if (widgetId.current && window.turnstile) {
         window.turnstile.remove(widgetId.current)
         widgetId.current = null
