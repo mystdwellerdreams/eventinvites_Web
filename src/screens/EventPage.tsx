@@ -51,6 +51,14 @@ export interface EventDraft {
   unpublishAfterEnd: boolean
   address: string
   coverImage: string
+  /**
+   * Every image for the carousel, in display order.
+   *
+   * The draft carries them because the preview is meant to show the event as
+   * it will look — and the cover the administrator uploaded is the first of
+   * them, not the legacy single cover.
+   */
+  images: { url: string }[]
   price: number | null
   contactInfo: string
   hostId: string
@@ -309,6 +317,13 @@ export default function EventPage() {
       unpublishAfterEnd: draft!.unpublishAfterEnd,
       address: draft!.address || null,
       coverImage: draft!.coverImage || null,
+      // The editor keeps only the address of each image, while a stored event
+      // keeps an id and a position as well; the preview makes them up.
+      images: (draft!.images ?? []).map((image, index) => ({
+        id: `draft-${index}`,
+        order: index,
+        url: image.url,
+      })),
       isPublished: false,
       creatorId: '',
       hostId: draft!.hostId || null,

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { bannersAPI, apiErrorMessage } from '../utils/api'
+import { bannersAPI, apiErrorMessage, resolveAssetUrl } from '../utils/api'
 import { useI18n } from '../i18n'
 import { useAuth } from '../context/AuthContext'
 import type {
@@ -40,7 +40,7 @@ export default function BannerAdView({ ad }: { ad: BannerAd }) {
 function CoverAd({ config }: { config: BannerCoverConfig }) {
   const style: React.CSSProperties = {}
   if (config.backgroundType === 'image' && config.imageUrl) {
-    style.backgroundImage = `url("${config.imageUrl}")`
+    style.backgroundImage = `url("${resolveAssetUrl(config.imageUrl)}")`
   } else if (config.backgroundType === 'gradient') {
     style.background = `linear-gradient(135deg, ${
       config.gradientFrom || '#3b82f6'
@@ -184,7 +184,7 @@ function CounterAd({ ad, config }: { ad: BannerAd; config: BannerCounterConfig }
 
   const style: React.CSSProperties = {}
   if (config.backgroundType === 'image' && config.imageUrl) {
-    style.backgroundImage = `url("${config.imageUrl}")`
+    style.backgroundImage = `url("${resolveAssetUrl(config.imageUrl)}")`
     style.backgroundSize = 'cover'
     style.backgroundPosition = 'center'
   } else if (config.backgroundType === 'gradient') {

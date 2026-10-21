@@ -50,6 +50,9 @@ worker-configuration.d.ts
 # User uploads. Never publish real user images.
 backend/uploads/
 
+# The picture the upload check writes while it runs.
+scripts/.upload-check.png
+
 # Installables
 *.apk
 *.aab

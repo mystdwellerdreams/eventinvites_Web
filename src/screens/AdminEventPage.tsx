@@ -813,6 +813,9 @@ export default function AdminEventPage() {
       contactMode,
       address: form.address,
       coverImage: form.coverImage,
+      // The images the administrator uploaded, so the preview shows the
+      // cover they will see rather than an empty one.
+      images: images.map((i) => ({ url: i.url.trim() })).filter((i) => i.url),
       price: form.price === '' ? null : Number(form.price),
       priceItems: priceItems.filter((i) => i.name.trim()),
       contactInfo: form.contactInfo,

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { bannersAPI, uploadAPI, apiErrorMessage } from '../utils/api'
+import { bannersAPI, uploadAPI, apiErrorMessage, resolveAssetUrl } from '../utils/api'
 import type {
   BannerAd,
   BannerAdType,
@@ -947,7 +947,7 @@ function BannerImageField({
       </div>
       <div className="cover-images-thumb">
         {value ? (
-          <img src={value} alt={t('banner.imagePreview')} loading="lazy" />
+          <img src={resolveAssetUrl(value)} alt={t('banner.imagePreview')} loading="lazy" />
         ) : (
           <span className="cover-images-thumb-empty">{t('banner.imageNoImage')}</span>
         )}

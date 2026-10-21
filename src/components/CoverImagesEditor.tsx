@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { uploadAPI } from '../utils/api'
+import { uploadAPI, resolveAssetUrl } from '../utils/api'
 import './CoverImagesEditor.css'
 import { useI18n } from '../i18n'
 
@@ -146,7 +146,11 @@ export default function CoverImagesEditor({
 
               <div className="cover-images-thumb">
                 {row.url ? (
-                  <img src={row.url} alt={`Preview ${index + 1}`} loading="lazy" />
+                  <img
+                    src={resolveAssetUrl(row.url)}
+                    alt={`Preview ${index + 1}`}
+                    loading="lazy"
+                  />
                 ) : (
                   <span className="cover-images-thumb-empty">{t('editor.imageNoImage')}</span>
                 )}
