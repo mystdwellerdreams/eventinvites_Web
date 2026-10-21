@@ -104,6 +104,28 @@ jobs:
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/event-invites-release.jks
 
+      - name: Check the key
+        # The store has its own password, and the key inside it can have
+        # another one — except in a PKCS12 store, which keeps only one. The
+        # two are checked apart here, so that a wrong password is named
+        # rather than surfacing as a failed build three minutes later.
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/android/event-invites-release.jks
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if ! keytool -list -keystore "$KEYSTORE_FILE" -storepass "$STORE_PASSWORD" > /dev/null 2>&1; then
+            echo "::error::the store password does not open the key store. ANDROID_KEYSTORE_PASSWORD is not the password of the key store."
+            exit 1
+          fi
+          echo "the store opens with the store password"
+          if ! keytool -list -v -keystore "$KEYSTORE_FILE" -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" -keypass "$KEY_PASSWORD" > /dev/null 2>&1; then
+            echo "::error::the key password does not read the key. ANDROID_KEY_PASSWORD is not the password of the key. A PKCS12 key store keeps one password for both, so there it has to be the store password."
+            exit 1
+          fi
+          echo "the key reads with the key password"
+
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build the release APK
