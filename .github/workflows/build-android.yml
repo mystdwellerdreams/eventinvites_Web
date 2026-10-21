@@ -116,6 +116,10 @@ jobs:
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          # A secret that was set from a file carries the newline the file
+          # ended with, and a password with a newline in it opens nothing.
+          STORE_PASSWORD="$(printf '%s' "$STORE_PASSWORD" | tr -d '\r\n')"
+          KEY_PASSWORD="$(printf '%s' "$KEY_PASSWORD" | tr -d '\r\n')"
           if keytool -list -keystore "$KEYSTORE_FILE" -storepass "$STORE_PASSWORD" > /dev/null 2>&1; then
             STORE="$STORE_PASSWORD"
             echo "the store password opens the key store"
