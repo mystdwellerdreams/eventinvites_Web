@@ -34,6 +34,7 @@
         "web:preview": "node scripts/serve-web-dist.mjs",
         "web:check": "node scripts/check-pages-routing.mjs",
         "check:uploads": "node scripts/check-image-uploads.mjs",
+        "check:uploads:app": "node scripts/check-app-uploads.mjs",
         "android:apk": "cd android && ./gradlew assembleRelease",
         "worker:dev": "node scripts/worker-dev.mjs",
         "worker:deploy": "wrangler deploy",

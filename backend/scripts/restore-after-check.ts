@@ -1,50 +1,65 @@
 import dotenv from 'dotenv'
-import { list, del } from '@vercel/blob'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { prisma } from '../src/utils/prisma'
+import { deleteUpload } from '../src/utils/storage'
 
 dotenv.config({ path: ['../.env.local', '.env.local'], quiet: true })
 
 /**
- * Puts back what the image-upload check changed: the cover banner's
- * background, and the pictures the check wrote into the store.
+ * Puts back what an image-upload check changed.
  *
- * The banner's configuration is a JSON string in the column, so it is written
- * out in full — the way it was before the check gave it an image.
+ * The check writes down what it touched before it touches it — the banner's
+ * configuration, the account's avatar, and the names of the files it wrote
+ * into the store — and this puts exactly that back. Anything else is left
+ * alone: a picture a real visitor uploaded a minute ago is not the check's
+ * to remove.
  */
-const ad = await prisma.bannerAd.findFirst({ where: { type: 'COVER' } })
-if (ad) {
-  const config = {
-    backgroundType: 'gradient',
-    gradientFrom: '#3b82f6',
-    gradientTo: '#8b5cf6',
-    text: 'Kolymafia Club - #1 в Магадане',
-    alignment: 'left',
-    fontColor: '#d4dde4',
-    description: '',
-    verticalAlignment: 'bottom',
-    descriptionAlignment: 'left',
-  }
-  await prisma.bannerAd.update({
-    where: { id: ad.id },
-    data: { config: JSON.stringify(config) },
-  })
-  console.log('the cover banner is a gradient again, with the text it had')
+const SNAPSHOT = resolve(process.argv[2] ?? '../scripts/.upload-check.json')
+
+interface Snapshot {
+  /** The account whose avatar the check replaced. */
+  avatar?: { userId: string; value: string | null } | null
+  /** The banner the check gave an image. */
+  banner?: { adId: string; config: unknown } | null
+  /** The names of the files the check wrote into the store. */
+  files?: string[]
 }
 
-// The pictures the check wrote are removed from the store. The timestamps come
-// back in a readable form rather than as ISO, so they are compared as dates.
-const found = await list({
-  prefix: 'uploads/',
-  limit: 200,
-  token: process.env.BLOB_READ_WRITE_TOKEN,
-})
-const since = new Date(Date.now() - 60 * 60 * 1000)
-const mine = found.blobs.filter((blob) => new Date(blob.uploadedAt) > since)
-for (const blob of mine) {
-  await del(blob.pathname, { token: process.env.BLOB_READ_WRITE_TOKEN })
+let snapshot: Snapshot = {}
+try {
+  snapshot = JSON.parse(readFileSync(SNAPSHOT, 'utf8')) as Snapshot
+} catch {
+  console.log(`no snapshot at ${SNAPSHOT}; there is nothing to put back`)
 }
-console.log(
-  `removed ${mine.length} picture(s) written in the last hour; ${found.blobs.length - mine.length} left`
-)
+
+if (snapshot.avatar?.userId) {
+  await prisma.user.update({
+    where: { id: snapshot.avatar.userId },
+    data: { avatar: snapshot.avatar.value || null },
+  })
+  console.log('the account carries the avatar it had again')
+}
+
+if (snapshot.banner?.adId) {
+  // The configuration is a JSON string in the column, so it is written out
+  // in full — the way it was before the check gave the banner an image.
+  await prisma.bannerAd.update({
+    where: { id: snapshot.banner.adId },
+    data: { config: JSON.stringify(snapshot.banner.config) },
+  })
+  console.log('the banner carries the configuration it had again')
+}
+
+for (const name of snapshot.files ?? []) {
+  try {
+    await deleteUpload(name)
+  } catch (err) {
+    console.log(`could not remove ${name}:`, (err as Error).message)
+  }
+}
+if (snapshot.files?.length) {
+  console.log(`removed ${snapshot.files.length} picture(s) the check wrote`)
+}
 
 await prisma.$disconnect()

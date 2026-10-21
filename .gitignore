@@ -53,6 +53,10 @@ backend/uploads/
 # The picture the upload check writes while it runs.
 scripts/.upload-check.png
 
+# What the upload checks write down, so that they can put it back afterwards.
+scripts/.upload-check.json
+scripts/.upload-check-app.json
+
 # Installables
 *.apk
 *.aab

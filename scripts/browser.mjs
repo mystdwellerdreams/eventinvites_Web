@@ -52,8 +52,13 @@ export async function launchBrowser() {
   }
 }
 
-/** Opens a page and returns a handle to drive it. */
-export async function openPage(url) {
+/**
+ * Opens a page and returns a handle to drive it.
+ *
+ * `options.initScript` runs in the page before any of its own scripts, which
+ * is how the app bundle is made to look like the native shell it runs in.
+ */
+export async function openPage(url, options = {}) {
   // A blank target, navigated afterwards: the endpoint that takes an address
   // is not consistent across versions.
   const res = await fetch(`http://127.0.0.1:${PORT}/json/new?about:blank`, { method: 'PUT' })
@@ -86,6 +91,12 @@ export async function openPage(url) {
   await send('Page.enable')
   await send('DOM.enable')
   await send('Runtime.enable')
+
+  // The script is registered before the page is opened, so it is in place
+  // before the bundle runs.
+  if (options.initScript) {
+    await send('Page.addScriptToEvaluateOnNewDocument', { source: options.initScript })
+  }
 
   const page = {
     send,
