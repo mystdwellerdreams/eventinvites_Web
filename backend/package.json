@@ -19,8 +19,10 @@
     "storage:check": "tsx scripts/check-storage.ts",
     "storage:describe": "tsx scripts/describe-store.ts",
     "storage:list": "tsx scripts/list-blob-store.ts",
-    "check:deployed": "tsx scripts/check-deployed-upload.ts",
-        "db:check-transactions": "tsx scripts/check-transactions.ts",
+    "push:check": "tsx scripts/check-fcm-service-account.ts",
+    "push:fix": "tsx scripts/fix-fcm-value.ts",
+    "check:deployed": "tsx scripts/check-push-and-storage.ts",
+    "db:check-transactions": "tsx scripts/check-transactions.ts",
         "postinstall": "prisma generate"
     },
     "dependencies": {

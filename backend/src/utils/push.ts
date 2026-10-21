@@ -112,22 +112,69 @@ function readAccount(): ServiceAccount | null {
   return account
 }
 
-/** Accepts raw JSON or a base64-encoded copy of the same. */
+/**
+ * Accepts raw JSON, a JSON document that was itself stringified, a copy
+ * pasted by hand, or a base64-encoded copy of any of them.
+ *
+ * The stringified form is what a person ends up with when they copy the
+ * account out of a console: `JSON.parse` on it succeeds and hands back a
+ * string, so it has to be unwrapped and read again.
+ */
 function parseJson(value: string): Record<string, unknown> | null {
-  const attempts = [value, safeBase64(value)].filter(
+  const attempts = [value, repairJson(value), safeBase64(value)].filter(
     (candidate): candidate is string => Boolean(candidate)
   )
   for (const attempt of attempts) {
     try {
       const parsed: unknown = JSON.parse(attempt)
-      if (parsed && typeof parsed === 'object') {
-        return parsed as Record<string, unknown>
+      const unwrapped = typeof parsed === 'string' ? unwrapJson(parsed) : parsed
+      if (unwrapped && typeof unwrapped === 'object') {
+        return unwrapped as Record<string, unknown>
       }
     } catch {
       // Try the next form.
     }
   }
   return null
+}
+
+/**
+ * Repairs a JSON document that was pasted into a single-line value.
+ *
+ * An environment variable holds one line, so a document copied out of a
+ * console arrives with its newlines still in it — and a newline is not
+ * allowed between JSON tokens. The quotes may also have been escaped by
+ * hand. Putting the quotes back first makes it possible to tell the
+ * newlines apart: the ones inside a string are the key's own line breaks and
+ * have to stay escaped, and the ones between tokens are only whitespace.
+ */
+function repairJson(value: string): string {
+  const unescaped = value.replace(/\\"/g, '"')
+  let out = ''
+  let inString = false
+  for (const char of unescaped) {
+    if (char === '"') {
+      inString = !inString
+      out += char
+      continue
+    }
+    if (char === '\n' || char === '\r') {
+      out += inString ? '\\n' : ' '
+      continue
+    }
+    out += char
+  }
+  return out
+}
+
+/** Reads a JSON document that arrived as a string. */
+function unwrapJson(value: string): unknown {
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return parsed && typeof parsed === 'object' ? parsed : null
+  } catch {
+    return null
+  }
 }
 
 function safeBase64(value: string): string | null {

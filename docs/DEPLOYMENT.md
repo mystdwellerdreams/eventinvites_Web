@@ -74,7 +74,7 @@ applies migrations, so a preview build needs them too.
 | `BLOB_STORE_ID` | no | identifies the store, for reference |
 | `FRONTEND_URL` | yes | the origins allowed to call the API |
 | `TURNSTILE_SECRET_KEY` | no | enables the real captcha check |
-| `FCM_SERVICE_ACCOUNT_JSON` | no | enables push to the Android app |
+| `FCM_SERVICE_ACCOUNT_JSON` | no | enables push to the Android app — see [Push notifications](#push-notifications) |
 | `CROSS_SITE_AUTH` | no | `false` to keep the cookies `SameSite=Lax` |
 
 The uploads go to **Vercel Blob**. The token identifies the store, so it is
@@ -211,7 +211,6 @@ npm run android:sync
 
 The key is not in the repository, and an APK signed with it can be updated by
 whoever holds the key, so it stays with its owner.
-
 ```bash
 keytool -genkeypair -v -keystore android/event-invites-release.jks \
   -keyalg RSA -keysize 2048 -validity 10000 -alias eventinvites
@@ -254,7 +253,55 @@ npm run android:apk      # build the signed APK
 
 The APK lands in `android/app/build/outputs/apk/release/app-release.apk`.
 
-## 5. The workflows
+## 5. Push notifications
+
+Two things have to be in place, and they are different halves of the same
+chain.
+
+**The API signs the message.** It needs a Firebase service account, which
+Firebase issues as a JSON document. The API reads it from
+`FCM_SERVICE_ACCOUNT_JSON` and accepts three forms, because an environment
+variable holds one line and a document copied out of a console rarely fits:
+
+| Form | When to use it |
+| --- | --- |
+| the raw JSON on one line | a deployment's environment variable |
+| base64 of the same document | a `.env` file, whose parser cannot carry a document with quotes in it |
+| a document pasted by hand | neither of the above — the API repairs it |
+
+```bash
+# A deployment: the raw document.
+npx vercel env add FCM_SERVICE_ACCOUNT_JSON production
+
+# A .env file: the base64 copy.
+npm run push:fix --workspace=backend
+```
+
+**The app asks for a token.** The APK carries the app's own Firebase
+configuration, which names the project, the sender and the API key. It is not
+secret, but it is not in the repository either, so the build writes it from
+the `FCM_GOOGLE_SERVICES_JSON` secret.
+
+**Checking it.** The app registers its device against the signed-in account, so
+a device that has never been opened against this API has no token and no push
+can reach it. The API says so:
+
+```bash
+curl -X POST https://<your-api>/api/devices/test -H 'cookie: <a session cookie>'
+# {"devices":1,"configured":true}
+```
+
+`configured: true` means the service account was read and the chain is whole;
+`devices: 0` means no phone has registered yet.
+
+The whole chain can be checked without a phone:
+
+```bash
+npm run push:check --workspace=backend     # the account, and a token from Google
+npm run check:deployed --workspace=backend # the uploads, the device, and the push test
+```
+
+## 6. The workflows
 
 | Workflow | When | What it does |
 | --- | --- | --- |
@@ -286,7 +333,7 @@ The signing key is stored base64-encoded:
 base64 -w0 android/event-invites-release.jks
 ```
 
-## 6. Checking a deployment
+## 7. Checking a deployment
 
 ```bash
 curl https://<your-api>.vercel.app/api/health
@@ -359,7 +406,7 @@ upload and the image coming back:
 npm run check:deployed --workspace=backend
 ```
 
-## 7. When something fails
+## 8. When something fails
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |

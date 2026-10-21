@@ -206,7 +206,7 @@ Routes mirror the bell exactly:
 
 | Variable | Where | Purpose |
 | -------- | ----- | ------- |
-| `FCM_SERVICE_ACCOUNT_JSON` | API (Vercel **and** `.env.local`) | Service-account key, raw JSON or base64. Unset disables push. |
+| `FCM_SERVICE_ACCOUNT_JSON` | API (Vercel **and** `.env.local`) | Service-account key. Raw JSON, a base64 copy, or a document pasted by hand — the API reads all three. Unset disables push. |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | API | Alias for the same value. |
 | `GOOGLE_APPLICATION_CREDENTIALS` | API (file path) | Path to the key file. Handy locally, not on Vercel. |
 | `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY` | API | The three fields separately, when a single JSON is awkward. |
@@ -232,24 +232,25 @@ Routes mirror the bell exactly:
 
 ## 8. Release build
 
-Debug APKs are published from CI on every push to `main` and on every `v*` tag.
+The APK is built by the `build-android` workflow, on a `v*` tag or by hand.
 
 | Variable | Where | Notes |
 | -------- | ----- | ----- |
-| `FCM_GOOGLE_SERVICES_JSON` | Actions secret | Written to `android/app/google-services.json`. Never committed. |
-| `ANDROID_KEYSTORE_BASE64` | Actions secret | Debug first, then release. |
+| `FCM_GOOGLE_SERVICES_JSON` | Actions secret | Written to `android/app/google-services.json`. Never committed. Without it the app has no Firebase project, asks for no push token, and every notification goes nowhere. |
+| `ANDROID_KEYSTORE_BASE64` | Actions secret | The release key, base64-encoded. |
 | `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` | Actions secrets | Signing inputs. |
 | `VITE_API_BASE` | Actions variable | Absolute API base for the Vite build. |
 
-The CI workflow (`/android.yml`) runs `npm ci`, `npm run app:build` (which fails
-fast on a missing `VITE_API_BASE`), writes `google-services.json` from the
-secret, restores the shared debug keystore, and builds with `./gradlew
-assembleDebug`. On a `v*` tag the same pipeline runs `assembleRelease`, signed
-with the upload keystore, and attaches the APK to a GitHub Release with
-generated notes.
+The workflow (`/build-android.yml`) runs `npm ci`, bundles the app, copies it
+into the Android project, writes `google-services.json` from the secret, sets
+the version, restores the signing key and builds with `./gradlew
+assembleRelease`. On a `v*` tag the APK is also attached to a GitHub Release
+with generated notes.
 
-`versionCode` comes from `github.run_number` (written into `build.gradle` so it
-never goes backwards) and `versionName` from the tag.
+The version is set by the workflow: the code is the run number, so it never
+goes backwards and a build always installs over the last one, and the name is
+the release tag, so the app reports which build it is and the server can tell
+two devices apart.
 
 Switching from the debug to the release signing key forces one uninstall —
 document it in the release notes.
