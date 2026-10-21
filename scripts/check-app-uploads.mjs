@@ -3,6 +3,7 @@ import { createServer } from 'node:http'
 import { createServer as createSocketServer } from 'node:net'
 import { readFile, stat, writeFile } from 'node:fs/promises'
 import { extname, join, normalize, resolve } from 'node:path'
+import { tmpdir } from 'node:os'
 import { launchBrowser, openPage } from './browser.mjs'
 import {
   ADMIN,
@@ -25,8 +26,12 @@ import {
  * What is checked is what a person would notice: the avatar they choose is
  * stored, linked to their account and shown, and the cover they upload is
  * shown with its preview.
+ *
+ * The bundle is built into a directory of its own, not into `mobile/www`:
+ * this build points at the API the check runs, and the one in `mobile/www`
+ * is the one an APK is made from.
  */
-const BUNDLE = resolve('mobile/www')
+const BUNDLE = resolve(tmpdir(), 'eventinvites-app-check')
 const PICTURE = resolve('scripts/.upload-check.png')
 const SNAPSHOT = resolve('scripts/.upload-check-app.json')
 
@@ -271,17 +276,21 @@ try {
     if (process.env.CHECK_APP_SKIP_BUILD === '1') {
       return 'the build was skipped'
     }
-    execFileSync(process.execPath, [VITE, 'build', '--config', 'mobile/vite.config.ts'], {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        // The app names the API in full, because the two live on different
-        // origins. The captcha's site key is the one the environment
-        // carries, so the bundle is the one that will be shipped.
-        VITE_API_BASE: `${API_ORIGIN}/api`,
-      },
-      stdio: 'ignore',
-    })
+    execFileSync(
+      process.execPath,
+      [VITE, 'build', '--config', 'mobile/vite.config.ts', '--outDir', BUNDLE, '--emptyOutDir'],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          // The app names the API in full, because the two live on different
+          // origins. The captcha's site key is the one the environment
+          // carries, so the bundle is the one that will be shipped.
+          VITE_API_BASE: `${API_ORIGIN}/api`,
+        },
+        stdio: 'ignore',
+      }
+    )
     return 'the APK bundle is up to date'
   })
 
