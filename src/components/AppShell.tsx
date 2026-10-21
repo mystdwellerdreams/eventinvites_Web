@@ -7,6 +7,7 @@ import { useI18n } from '../i18n'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useDropdownPosition } from '../hooks/useDropdownPosition'
 import { adminAPI } from '../utils/api'
+import { assetUrl } from '../utils/env'
 import { hasRole, isGuest } from '../utils/roles'
 import AuthModal from './AuthModal'
 import FeedbackModal from './FeedbackModal'
@@ -192,7 +193,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <header className="header">
         <div className="container header-inner">
           <Link href="/" className="logo logo-desktop">
-            <img src="/logo.png" alt="" className="logo-icon" />
+            <img src={assetUrl('logo.png')} alt="" className="logo-icon" />
             <span className="logo-text">{t('app.name')}</span>
           </Link>
 
@@ -295,7 +296,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </button>
 
           <Link href="/" className="logo logo-mobile" aria-label={t('app.name')}>
-            <img src="/logo.png" alt="" className="logo-icon" />
+            <img src={assetUrl('logo.png')} alt="" className="logo-icon" />
           </Link>
 
           <div className="mobile-user-slot">

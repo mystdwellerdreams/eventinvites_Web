@@ -34,3 +34,17 @@ export function env(name: EnvName): string {
  * `VITE_API_BASE` to the absolute URL of the deployment.
  */
 export const API_BASE = env('API_BASE') || '/api'
+
+/**
+ * The address of a file that belongs to the app itself, such as its logo.
+ *
+ * Next serves the pages from the root, and Vite from the base the build was
+ * given — a project site on GitHub Pages lives under the repository's name.
+ * A file asked for by name has to be looked for there: `/logo.png` is the
+ * wrong place on a project site, and the logo would simply not be there.
+ */
+export function assetUrl(path: string): string {
+  const vite = (import.meta as ImportMeta & { env?: Record<string, string> }).env
+  const base = vite?.BASE_URL ?? '/'
+  return `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`
+}
