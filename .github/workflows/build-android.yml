@@ -69,6 +69,23 @@ jobs:
           rm -f android/app/build.gradle.bak
           grep -E "version(Code|Name)" android/app/build.gradle
 
+      - name: Check the signing material
+        # Without the key the build still succeeds — it produces an APK that
+        # cannot be installed — and the release would offer it to everyone
+        # whose app says there is an update. The run stops here instead, and
+        # says what is missing.
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE" ] || [ -z "$STORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "::error::the signing material is missing. ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD have to be set as repository secrets."
+            exit 1
+          fi
+          echo "the signing material is there"
+
       - name: Restore the signing key
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/event-invites-release.jks
