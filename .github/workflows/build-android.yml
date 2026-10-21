@@ -104,29 +104,38 @@ jobs:
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/event-invites-release.jks
 
-      - name: Check the key
-        # The store has its own password, and the key inside it can have
-        # another one — except in a PKCS12 store, which keeps only one. The
-        # two are checked apart here, so that a wrong password is named
-        # rather than surfacing as a failed build three minutes later.
+      - name: Work out the key's password
+        # A key store has a password, and the key inside it can have
+        # another — except in a PKCS12 store, which keeps only one, so the
+        # two secrets are usually the same value and sometimes only one of
+        # them was set to it. Whichever opens the store is the password the
+        # signing uses, and the key is read with it too.
         env:
           KEYSTORE_FILE: ${{ github.workspace }}/android/event-invites-release.jks
           STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          if ! OUT="$(keytool -list -keystore "$KEYSTORE_FILE" -storepass "$STORE_PASSWORD" 2>&1)"; then
-            echo "::error::the store password does not open the key store. ANDROID_KEYSTORE_PASSWORD is not the password of the key store."
-            echo "::error::keytool said: $OUT"
-            echo "::error::the key store is $(wc -c < "$KEYSTORE_FILE") bytes and starts with $(head -c 4 "$KEYSTORE_FILE" | od -An -tx1 | tr -d ' \n')"
+          if keytool -list -keystore "$KEYSTORE_FILE" -storepass "$STORE_PASSWORD" > /dev/null 2>&1; then
+            STORE="$STORE_PASSWORD"
+            echo "the store password opens the key store"
+          elif keytool -list -keystore "$KEYSTORE_FILE" -storepass "$KEY_PASSWORD" > /dev/null 2>&1; then
+            STORE="$KEY_PASSWORD"
+            echo "the key password opens the key store, so that is the password of both"
+          else
+            echo "::error::neither ANDROID_KEYSTORE_PASSWORD nor ANDROID_KEY_PASSWORD opens the key store. The password of the key store is needed to sign with it."
             exit 1
           fi
-          echo "the store opens with the store password"
-          if ! keytool -list -v -keystore "$KEYSTORE_FILE" -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" -keypass "$KEY_PASSWORD" > /dev/null 2>&1; then
-            echo "::error::the key password does not read the key. ANDROID_KEY_PASSWORD is not the password of the key. A PKCS12 key store keeps one password for both, so there it has to be the store password."
-            exit 1
+          echo "the aliases in the store:"
+          keytool -list -keystore "$KEYSTORE_FILE" -storepass "$STORE" | sed -n 's/^ *\([A-Za-z0-9._-]*\),\(.*\)/  \1\2/p'
+          if keytool -list -v -keystore "$KEYSTORE_FILE" -storepass "$STORE" -alias "$KEY_ALIAS" -keypass "$KEY_PASSWORD" > /dev/null 2>&1; then
+            KEY="$KEY_PASSWORD"
+          else
+            KEY="$STORE"
+            echo "the key is read with the store's password"
           fi
-          echo "the key reads with the key password"
+          echo "ANDROID_KEYSTORE_PASSWORD=$STORE" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_PASSWORD=$KEY" >> "$GITHUB_ENV"
 
       - uses: gradle/actions/setup-gradle@v4
 
@@ -134,12 +143,12 @@ jobs:
         working-directory: android
         env:
           ANDROID_KEYSTORE_FILE: ${{ github.workspace }}/android/event-invites-release.jks
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        # The wrapper is in the repository with its executable bit, and it
-        # is made executable here as well: a checkout that lost the bit
-        # would stop the release with "Permission denied".
+        # The passwords come from the step above, which worked out which of
+        # them opens the key store. The wrapper is in the repository with
+        # its executable bit, and it is made executable here as well: a
+        # checkout that lost the bit would stop the release with
+        # "Permission denied".
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease
