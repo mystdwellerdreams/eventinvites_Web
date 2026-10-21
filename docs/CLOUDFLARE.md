@@ -91,6 +91,9 @@ Every one of these is a secret, and each is set with `wrangler secret put`:
 npx wrangler secret put JWT_SECRET
 npx wrangler secret put REFRESH_SECRET
 npx wrangler secret put FRONTEND_URL
+npx wrangler secret put TURNSTILE_SECRET_KEY
+npx wrangler secret put BLOB_READ_WRITE_TOKEN
+npx wrangler secret put BLOB_STORE_ID
 npx wrangler secret put AWS_ENDPOINT_URL_S3
 npx wrangler secret put AWS_ACCESS_KEY_ID
 npx wrangler secret put AWS_SECRET_ACCESS_KEY
@@ -98,6 +101,16 @@ npx wrangler secret put AWS_REGION
 npx wrangler secret put NEON_STORAGE_BUCKET
 npx wrangler secret put NEON_STORAGE_ACCESS
 ```
+
+`TURNSTILE_SECRET_KEY` is the Cloudflare Turnstile secret the API verifies a
+challenge with. Without it the API accepts every challenge, so the check is
+only real where it is set.
+
+`BLOB_READ_WRITE_TOKEN` and `BLOB_STORE_ID` are the Vercel Blob store the
+uploads live in, and they go together: the store id is what scopes the
+store's access mode to this deployment, so that a changeover to another store
+does not have the two deployments fighting over one remembered answer. See
+[The upload store](DEPLOYMENT.md#the-upload-store).
 
 `FRONTEND_URL` lists the origins that may call the API. The web app and the
 API share an origin, so only the Android app needs one:

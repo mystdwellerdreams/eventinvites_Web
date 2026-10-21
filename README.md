@@ -473,9 +473,10 @@ migrations, so preview builds need them too):
 | `JWT_SECRET`            | yes      | signs access tokens                            |
 | `REFRESH_SECRET`        | yes      | signs refresh tokens                           |
 | `BLOB_READ_WRITE_TOKEN` | yes      | the Vercel Blob store for uploaded images       |
-| `BLOB_STORE_ID`         | no       | identifies the store, for reference             |
+| `BLOB_STORE_ID`         | yes      | identifies the store, and scopes its access mode to this deployment |
 | `NEON_STORAGE_BUCKET`   | yes      | the bucket the images live in                  |
-| `TURNSTILE_SECRET_KEY`  | no       | server-side captcha check                      |
+| `TURNSTILE_SECRET_KEY`  | yes      | the Cloudflare Turnstile secret the API verifies a challenge with |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | yes | the Turnstile site key, inlined into the page          |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | no | inlines the captcha widget                |
 | `FCM_SERVICE_ACCOUNT_JSON` | no    | enables push to the Android app                |
 | `FRONTEND_URL`          | no       | origins allowed to call the API; include `https://localhost` for the APK |

@@ -71,9 +71,10 @@ applies migrations, so a preview build needs them too.
 | `JWT_SECRET` | yes | signs access tokens |
 | `REFRESH_SECRET` | yes | signs refresh tokens |
 | `BLOB_READ_WRITE_TOKEN` | yes | the Vercel Blob store the uploads live in |
-| `BLOB_STORE_ID` | no | identifies the store, for reference |
+| `BLOB_STORE_ID` | yes | identifies the store, and scopes the store's access mode to it — see [The upload store](#the-upload-store) |
 | `FRONTEND_URL` | yes | the origins allowed to call the API |
-| `TURNSTILE_SECRET_KEY` | no | enables the real captcha check |
+| `TURNSTILE_SECRET_KEY` | yes | the Cloudflare Turnstile secret the API verifies a challenge with |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | yes | the Turnstile site key, inlined into the pages |
 | `FCM_SERVICE_ACCOUNT_JSON` | no | enables push to the Android app — see [Push notifications](#push-notifications) |
 | `CROSS_SITE_AUTH` | no | `false` to keep the cookies `SameSite=Lax` |
 
@@ -85,6 +86,86 @@ An S3-compatible store — Neon Object Storage among them — can be used
 instead by setting the `AWS_*` variables and leaving
 `BLOB_READ_WRITE_TOKEN` unset. `STORAGE_BACKEND` picks one explicitly when
 more than one is configured.
+
+### The captcha
+
+The sign-in, the registration, the feedback form and the event editor ask for
+a **Cloudflare Turnstile** challenge. The widget is on the page, and the API
+asks Cloudflare whether the token it carries is genuine — a token is
+single-use, and one that is not genuine is refused.
+
+Three variables carry it:
+
+| Variable | Where | Purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | the Next build | the site key, inlined into the page |
+| `VITE_TURNSTILE_SITE_KEY` | the Vite builds — the web app and the APK | the site key, inlined into the bundle |
+| `TURNSTILE_SECRET_KEY` | the API, and only the API | the secret the token is verified with |
+
+The site key is public — it is in the page for everyone to read — and the
+secret is not.
+
+**The hostnames have to be allowed.** The widget only runs on the hostnames
+listed for it in the Cloudflare dashboard, and a hostname that is not on the
+list is refused with `110200 — Domain not authorized`. The widget then
+fails, and the app falls back to its own arithmetic challenge, so the site
+keeps working — but the challenge in front of people is the weaker one. The
+hostnames to add:
+
+| Hostname | Where it is needed |
+| --- | --- |
+| `localhost` | the local dev server, and the Android app: its WebView answers on `https://localhost` |
+| `mystdwellerdreams.github.io` | the web app on GitHub Pages |
+| `eventinvites.mystdwellerdreams.workers.dev` | the app served by the Worker |
+
+Without a secret the API accepts every challenge and says so in the log —
+`challenges are accepted without verification` — so the check is only real
+where `TURNSTILE_SECRET_KEY` is set.
+
+### The upload store
+
+A Vercel Blob store is created either for **public** or for **private**
+access, and the choice cannot be changed afterwards. It decides how the
+pictures reach the browser:
+
+| Access | What the browser does | What the API does |
+| --- | --- | --- |
+| public | fetches the picture from the CDN itself | answers `/uploads/<file>` with a redirect to the CDN |
+| private | cannot open the stored address at all | reads the bytes with the token and serves them |
+
+A public store is the faster of the two: the pictures never pass through the
+API, and they are cached at the CDN. A private store keeps them unreadable to
+anyone who has the address, at the cost of every picture request going
+through the API.
+
+The store's access mode is settled by the store itself: an upload in the
+wrong mode is refused — *"Cannot use public access on a private store"* —
+and the API remembers the answer in the `Setting` table, under
+`blob_store_access:<store id>`, so that later requests do not have to probe.
+**The store id is what tells two stores apart**, which is why
+`BLOB_STORE_ID` has to be set: while a changeover is in progress two
+deployments can point at two stores, and a single remembered answer would
+have them fighting over it.
+
+#### Replacing the store
+
+A store's token is shown only once, so a store that was recreated has a new
+one, and the pictures live in the old one. To move to a new store:
+
+1. **Copy the files.** Each file is read from the old store with its token
+   and written to the new one under the same path. The file names do not
+   change, so a row that names a file stays valid whichever store holds it.
+2. **Point the rows at the new store.** Every address in the database that
+   names the old store's host is replaced with the new one.
+3. **Set the token and the store id** in the environment: on the Vercel
+   project, as a Worker secret (`npx wrangler secret put BLOB_READ_WRITE_TOKEN`
+   and `npx wrangler secret put BLOB_STORE_ID`), and in the repository's
+   `.env.local` for local runs.
+4. **Set the new store's access mode** in the `Setting` table:
+   `blob_store_access:<store id>` = `public` or `private`.
+
+The old store is left alone, so a deployment that still points at it keeps
+working until its own variable is changed.
 
 `FRONTEND_URL` lists the origins that may call the API:
 
@@ -420,6 +501,8 @@ npm run check:deployed --workspace=backend
 | The first request after an idle period fails | the database was scaling to zero | add `connect_timeout=15&pool_timeout=10` to `DATABASE_URL` |
 | The APK will not install over an older one | the `versionCode` did not go up | raise it in `android/app/build.gradle` |
 | The APK is unsigned | no signing key was found | provide `keystore.properties` or the `ANDROID_KEYSTORE_*` variables |
+| The challenge in the form is the app's own, not Cloudflare's | the hostname is not on the widget's list | add it in the Cloudflare dashboard — see [The captcha](#the-captcha) |
+| Every request is refused with `CAPTCHA_FAILED` | the secret does not match the site key | check `TURNSTILE_SECRET_KEY` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY` are a pair |
 
 ## The other target
 
