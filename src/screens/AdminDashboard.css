@@ -139,7 +139,7 @@
 /* Portrait: the tab switcher moves into a full-width button bar
     pinned to the bottom of the screen, with an icon per tab. */
 @media (orientation: portrait){
-  .admin-tabs{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-header);gap:0;margin-bottom:0;border-bottom:none;border-top:2px solid #e0e0e0;background:#fff;box-shadow:0 -1px 3px #00000014;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .admin-tabs{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-header);gap:0;margin-bottom:0;border-bottom:none;border-top:2px solid #e0e0e0;background:#fff;box-shadow:0 -1px 3px #00000014;padding-bottom:var(--safe-area-inset-bottom,0px)}
   .admin-tabs button{flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:10px 2px;font-size:.68rem;border-bottom:none;margin-bottom:0;border-radius:0}
   .admin-tabs button.active{color:#1e40af;border-bottom:none;background:#eff6ff}
   .admin-tabs .tab-icon{display:inline-block;font-size:1.3rem;line-height:1}

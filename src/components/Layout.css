@@ -5,7 +5,11 @@
 .form-error{background:#fef2f2;color:#dc2626;padding:8px 12px;border-radius:6px;font-size:.85rem}
 .form-notice{background:#eff6ff;color:#1d4ed8;padding:8px 12px;border-radius:6px;font-size:.85rem}
 .layout{min-height:100vh;display:flex;flex-direction:column}
-.header{background:#fff;border-bottom:1px solid #e0e0e0;position:sticky;top:0;z-index:var(--z-header);box-shadow:0 1px 3px #0000000d}
+/* The app draws edge to edge on Android, so the header starts under the
+   status bar. The padding keeps its content clear of the bar while the
+   header's own background still runs behind it, and the inset is zero
+   everywhere else. */
+.header{background:#fff;border-bottom:1px solid #e0e0e0;position:sticky;top:0;z-index:var(--z-header);box-shadow:0 1px 3px #0000000d;padding-top:var(--safe-area-inset-top,0px)}
 .header-inner{display:flex;align-items:center;justify-content:space-between;height:64px;gap:24px}
 .logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:#1a1a1a;font-weight:700;font-size:1.25rem}
 /* The mark is a 128px square; it renders at the same
@@ -121,13 +125,13 @@
   /* Anchored to the bell, a wide dropdown would hang off the left edge of a
      phone, so the panel spans the screen width instead, just under the
      header, matching the drawer's insets. */
-  .notif-panel{position:fixed;top:72px;left:8px;right:8px;width:auto;max-width:none;max-height:calc(100dvh - 88px);z-index:calc(var(--z-dropdown))}
+  .notif-panel{position:fixed;top:calc(72px + var(--safe-area-inset-top,0px));left:8px;right:8px;width:auto;max-width:none;max-height:calc(100dvh - 88px);z-index:calc(var(--z-dropdown))}
 }
 
 /* ---- Pop-up panels (portrait) ---- */
 .drawer-overlay{position:fixed;top:0;right:0;bottom:0;left:0;background:#00000080;z-index:var(--z-overlay);opacity:0;visibility:hidden;transition:opacity .25s ease,visibility 0s linear .25s}
 .drawer-overlay.visible{opacity:1;visibility:visible;transition:opacity .25s ease,visibility 0s}
-.drawer{position:fixed;top:8px;bottom:8px;left:8px;width:min(300px,calc(100vw - 16px));background:#fff;z-index:calc(var(--z-overlay) + 1);display:none;flex-direction:column;border-radius:12px;box-shadow:0 8px 30px #00000040;visibility:hidden;transform:translateX(-110%);transition:transform .25s ease,visibility 0s linear .25s}
+.drawer{position:fixed;top:calc(8px + var(--safe-area-inset-top,0px));bottom:8px;left:8px;width:min(300px,calc(100vw - 16px));background:#fff;z-index:calc(var(--z-overlay) + 1);display:none;flex-direction:column;border-radius:12px;box-shadow:0 8px 30px #00000040;visibility:hidden;transform:translateX(-110%);transition:transform .25s ease,visibility 0s linear .25s}
 .drawer.open{visibility:visible;transform:translateX(0);transition:transform .25s ease,visibility 0s}
 @media (orientation: portrait){
   .drawer{display:flex}

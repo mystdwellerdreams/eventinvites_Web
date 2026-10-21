@@ -37,6 +37,16 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    SystemBars: {
+      // The app draws edge to edge, so the content has to make room for the
+      // status bar itself. Capacitor publishes the measured insets as CSS
+      // custom properties, which the layout uses.
+      insetsHandling: 'css',
+      // The shell already says `viewport-fit=cover` in its viewport tag.
+      // Saying so here as well lets the insets be applied on the first pass,
+      // before the page is painted, so the content does not jump.
+      initialViewportFitValueHint: 'cover',
+    },
   },
 }
 
