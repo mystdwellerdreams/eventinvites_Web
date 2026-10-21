@@ -113,7 +113,12 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+        # The wrapper is in the repository with its executable bit, and it
+        # is made executable here as well: a checkout that lost the bit
+        # would stop the release with "Permission denied".
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
 
       - name: Upload the APK
         uses: actions/upload-artifact@v4
