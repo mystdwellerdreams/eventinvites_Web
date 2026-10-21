@@ -59,8 +59,23 @@ existed.
 
 - **Node 22** — the version the repository pins in `engines`.
 - **JDK 21** — Capacitor 8 compiles against Java 21 (`android/app/capacitor.build.gradle`).
+  Gradle 8.14 cannot read the class files a newer JDK writes, so a build on
+  Java 25 stops with *"Unsupported class file major version 69"*. It says so
+  only once the build scripts have to be compiled again, which is why a build
+  that worked yesterday can stop today — point `JAVA_HOME` at a JDK 21 rather
+  than at Android Studio's bundled one, which is a newer JDK.
 - **Android Studio** with the **Android SDK Platform 36** and matching build tools (the project targets SDK 36, minimum SDK 24).
 - A **Firebase project** for `google-services.json` and the service-account key.
+
+The SDK path lives in `android/local.properties`, and that file is read as a
+Java properties file — so the path wants forward slashes:
+
+```properties
+sdk.dir=C:/Users/you/AppData/Local/Android/Sdk
+```
+
+A single backslash is an escape there, and the build stops with *"Invalid
+file path"*.
 
 ## 1. Firebase
 
