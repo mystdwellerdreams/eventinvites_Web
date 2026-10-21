@@ -115,8 +115,10 @@ jobs:
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          if ! keytool -list -keystore "$KEYSTORE_FILE" -storepass "$STORE_PASSWORD" > /dev/null 2>&1; then
+          if ! OUT="$(keytool -list -keystore "$KEYSTORE_FILE" -storepass "$STORE_PASSWORD" 2>&1)"; then
             echo "::error::the store password does not open the key store. ANDROID_KEYSTORE_PASSWORD is not the password of the key store."
+            echo "::error::keytool said: $OUT"
+            echo "::error::the key store is $(wc -c < "$KEYSTORE_FILE") bytes and starts with $(head -c 4 "$KEYSTORE_FILE" | od -An -tx1 | tr -d ' \n')"
             exit 1
           fi
           echo "the store opens with the store password"
