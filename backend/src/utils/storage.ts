@@ -55,6 +55,21 @@ async function blob(): Promise<typeof import('@vercel/blob')> {
 const STORE_ACCESS_SETTING = 'blob_store_access'
 
 /**
+ * The key the store's access mode is remembered under.
+ *
+ * The mode belongs to the store rather than to the deployment: one created
+ * for public access refuses private uploads, and one created for private
+ * access refuses public ones. Two deployments can point at two stores while
+ * a changeover is in progress, so the answer is kept per store — the
+ * store's own identifier, when the environment carries one, is what tells
+ * them apart.
+ */
+function storeAccessKey(): string {
+  const id = envValue('BLOB_STORE_ID')
+  return id ? `${STORE_ACCESS_SETTING}:${id}` : STORE_ACCESS_SETTING
+}
+
+/**
  * `public`, `private`, or null while still unknown. A store created with
  * private access rejects public uploads, and the two cannot be mixed: the
  * first upload settles which one this deployment talks to, and the answer is
@@ -69,7 +84,7 @@ function isPrivateAccessError(err: unknown): boolean {
 async function detectStoreAccess(): Promise<'public' | 'private' | null> {
   if (storeAccess) return storeAccess
   const row = await prisma.setting.findUnique({
-    where: { key: STORE_ACCESS_SETTING },
+    where: { key: storeAccessKey() },
     select: { value: true },
   })
   if (row && (row.value === 'public' || row.value === 'private')) {
@@ -81,9 +96,9 @@ async function detectStoreAccess(): Promise<'public' | 'private' | null> {
 async function rememberStoreAccess(access: 'public' | 'private'): Promise<void> {
   storeAccess = access
   await prisma.setting.upsert({
-    where: { key: STORE_ACCESS_SETTING },
+    where: { key: storeAccessKey() },
     update: { value: access },
-    create: { key: STORE_ACCESS_SETTING, value: access },
+    create: { key: storeAccessKey(), value: access },
   })
 }
 

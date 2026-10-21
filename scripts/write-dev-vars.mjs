@@ -35,6 +35,7 @@ const lines = [
   `JWT_SECRET="${values.get('JWT_SECRET') ?? ''}"`,
   `REFRESH_SECRET="${values.get('REFRESH_SECRET') ?? ''}"`,
   `BLOB_READ_WRITE_TOKEN="${values.get('BLOB_READ_WRITE_TOKEN') ?? ''}"`,
+  `BLOB_STORE_ID="${values.get('BLOB_STORE_ID') ?? ''}"`,
   `AWS_ENDPOINT_URL_S3="${values.get('AWS_ENDPOINT_URL_S3') ?? ''}"`,
   `AWS_ACCESS_KEY_ID="${values.get('AWS_ACCESS_KEY_ID') ?? ''}"`,
   `AWS_SECRET_ACCESS_KEY="${values.get('AWS_SECRET_ACCESS_KEY') ?? ''}"`,
@@ -42,6 +43,7 @@ const lines = [
   `NEON_STORAGE_BUCKET="${values.get('NEON_STORAGE_BUCKET') ?? ''}"`,
   `NEON_STORAGE_ACCESS="${values.get('NEON_STORAGE_ACCESS') ?? ''}"`,
   `STORAGE_BACKEND="${values.get('STORAGE_BACKEND') ?? 'blob'}"`,
+  `TURNSTILE_SECRET_KEY="${values.get('TURNSTILE_SECRET_KEY') ?? ''}"`,
   '',
 ]
 

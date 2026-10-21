@@ -10,9 +10,14 @@ import { storeName } from './utils/storage'
  */
 const PORT = Number(process.env.PORT) || 4000
 
+/** How the store is named in the log: a disk, a blob store or an object store. */
+const STORE_LABELS: Record<ReturnType<typeof storeName>, string> = {
+  disk: 'local disk (development)',
+  blob: 'Vercel Blob',
+  object: 'object storage',
+}
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
-  console.log(
-    `Storage: ${storeName() === 'object' ? 'object storage' : 'local disk (development)'}`
-  )
+  console.log(`Storage: ${STORE_LABELS[storeName()]}`)
 })
