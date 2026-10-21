@@ -7,8 +7,8 @@ android {
         applicationId "club.kolymafia.eventinvites"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 5
-        versionName "1.0.0-beta.4"
+        versionCode 6
+        versionName "1.0.0-beta.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -35,15 +35,21 @@ android {
             if (propertiesFile.exists()) {
                 propertiesFile.withInputStream { signing.load(it) }
             }
-            def store = signing.getProperty("storeFile") ?: System.getenv("ANDROID_KEYSTORE_FILE")
-            def storePassword = signing.getProperty("storePassword") ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")
-            def keyAlias = signing.getProperty("keyAlias") ?: System.getenv("ANDROID_KEY_ALIAS")
-            def keyPassword = signing.getProperty("keyPassword") ?: System.getenv("ANDROID_KEY_PASSWORD")
-            if (store && storePassword && keyAlias && keyPassword) {
-                storeFile file(store)
-                storePassword storePassword
-                keyAlias keyAlias
-                keyPassword keyPassword
+            // The names here are deliberately not the same as the ones the
+            // setters below take. A local variable called `storePassword`
+            // shadows the setter of the same name, and `storePassword
+            // storePassword` then reads as calling the string — which is
+            // not a method, and the build fails with "No signature of
+            // method: java.lang.String.call()".
+            def storePath = signing.getProperty("storeFile") ?: System.getenv("ANDROID_KEYSTORE_FILE")
+            def storeSecret = signing.getProperty("storePassword") ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            def alias = signing.getProperty("keyAlias") ?: System.getenv("ANDROID_KEY_ALIAS")
+            def keySecret = signing.getProperty("keyPassword") ?: System.getenv("ANDROID_KEY_PASSWORD")
+            if (storePath && storeSecret && alias && keySecret) {
+                storeFile file(storePath)
+                storePassword storeSecret
+                keyAlias alias
+                keyPassword keySecret
             }
         }
     }

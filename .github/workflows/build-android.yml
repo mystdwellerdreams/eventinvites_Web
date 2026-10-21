@@ -64,7 +64,11 @@ jobs:
         # floor, so a release never asks a phone to go backwards and has to
         # be uninstalled first.
         run: |
+          # The tag is the release's name; the version the app reports is
+          # the same name without its v, the way the builds made by hand are
+          # named.
           VERSION_NAME="${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('build-{0}', github.run_number) }}"
+          VERSION_NAME="${VERSION_NAME#v}"
           RUN_CODE="${{ github.run_number }}"
           REPO_CODE="$(sed -n 's/^ *versionCode *\([0-9][0-9]*\).*/\1/p' android/app/build.gradle)"
           VERSION_CODE="$RUN_CODE"
