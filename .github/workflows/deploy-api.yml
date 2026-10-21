@@ -30,18 +30,12 @@ jobs:
         run: npm ci
 
       - name: Deploy
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-args: --prod --yes
-          # The action's own default is a CLI from before `--yes` existed,
-          # and the deployment stops on it: "unknown or unexpected option:
-          # --yes". The current one is asked for by name.
-          vercel-version: latest
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          # The comment the action leaves on the commit needs to read the
-          # account behind the token, and a token scoped to a project cannot
-          # ("User not found"). The deployment has already happened by then,
-          # so the comment is what fails the run.
-          github-comment: false
+        # The CLI is called directly rather than through an action: the
+        # action reads the account behind the token after it has deployed,
+        # which a token scoped to a project cannot ("User not found"), and
+        # the run fails on that rather than on the deployment.
+        run: npx vercel@latest deploy --prod --yes
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
