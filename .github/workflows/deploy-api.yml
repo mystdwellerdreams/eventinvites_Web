@@ -40,3 +40,8 @@ jobs:
           vercel-version: latest
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          # The comment the action leaves on the commit needs to read the
+          # account behind the token, and a token scoped to a project cannot
+          # ("User not found"). The deployment has already happened by then,
+          # so the comment is what fails the run.
+          github-comment: false
