@@ -34,5 +34,9 @@ jobs:
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-args: --prod --yes
+          # The action's own default is a CLI from before `--yes` existed,
+          # and the deployment stops on it: "unknown or unexpected option:
+          # --yes". The current one is asked for by name.
+          vercel-version: latest
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
