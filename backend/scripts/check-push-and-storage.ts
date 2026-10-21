@@ -98,8 +98,13 @@ const upload = async (path, field) => {
   assert(fetched.ok, `the image came back ${fetched.status}`)
   const bytes = Buffer.from(await fetched.arrayBuffer())
   assert(bytes.equals(PNG), 'the bytes differ')
+
+  // The file is removed again, so a check leaves nothing behind.
+  uploaded.push(new URL(url).pathname.split('/').pop())
   return url
 }
+
+const uploaded = []
 
 await check('an avatar uploads and comes back', async () => {
   const url = await upload('/api/upload/avatar', 'avatar')
@@ -150,5 +155,19 @@ await check('the push chain answers', async () => {
 })
 
 const passed = results.filter(Boolean).length
+
+// The images the check wrote are removed again, so it leaves nothing behind.
+if (uploaded.length) {
+  try {
+    const { del } = await import('@vercel/blob')
+    for (const name of uploaded) {
+      await del(`uploads/${name}`, { token: value('BLOB_READ_WRITE_TOKEN') })
+    }
+    console.log(`removed ${uploaded.length} test image(s)`)
+  } catch (err) {
+    console.log('could not remove the test images:', (err as Error).message)
+  }
+}
+
 console.log(`\n${passed}/${results.length} checks passed`)
 process.exitCode = passed === results.length ? 0 : 1
